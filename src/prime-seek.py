@@ -14,7 +14,7 @@ from seek_camera import thermal_camera
 
 #############################################################################
 # set-up primesense camera
-dist = '/home/julian/lib/OpenNI-x64/Redist'
+dist = "/home/reed/Install/kinect/OpenNI-Linux-Arm-2.2/Redist"
 # Initialize openni and check
 openni2.initialize(dist)
 if (openni2.is_initialized()):
@@ -105,11 +105,11 @@ fps = 8.0
 # ==============================================================================
 # THE CODECS
 # ==============================================================================
-if cv2.__version__ == '3.2.0':
+if cv2.__version__ == '3.1.0':
     fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
 else:
     fourcc = cv2.cv.CV_FOURCC('M', 'P', 'E', 'G')
-video_location = '/home/julian/Videos/'
+video_location = '/home/reed/Videos/'
 rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
 ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
 depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
