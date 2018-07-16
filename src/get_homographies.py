@@ -15,7 +15,7 @@ from seek_camera import thermal_camera
 
 #############################################################################
 # set-up primesense camera
-dist = '/home/julian/Install/OpenNI2-x64/Redist'
+dist = '/home/reed/Install/kinect/OpenNI-Linux-Arm-2.2/Redist'
 # Initialize openni and check
 openni2.initialize(dist)
 if (openni2.is_initialized()):
@@ -94,8 +94,8 @@ fps = 8.0
 # ==============================================================================
 # THE CODECS
 # ==============================================================================
-fourcc = cv2.cv.CV_FOURCC('M', 'P', 'E', 'G')
-video_location = '/home/julian/Videos/'
+fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
+video_location = '/home/reed/Videos/'
 rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
 ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
 depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
@@ -307,8 +307,8 @@ while not done:
                 H = np.vstack((H, distance))
                 Hinv = np.vstack((Hinv, distance))
                 num += 1
-                np.savetxt("/home/julian/Documents/Hmatrix_rgb_to_ir_" + str(num) + ".out", H)
-                np.savetxt("/home/julian/Documents/Hinvmatrix_ir_to_rgb_" + str(num) + ".out", Hinv)
+                np.savetxt("/home/reed/Documents/multimodal_vrl_camera_net/src/Homographies/Hmatrix_rgb_to_ir_" + str(num) + ".out", H)
+                np.savetxt("/home/reed/Documents/multimodal_vrl_camera_net/src/Homographies/Hinvmatrix_ir_to_rgb_" + str(num) + ".out", Hinv)
                 leave = True
 
     # display and write video

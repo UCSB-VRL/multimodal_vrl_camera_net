@@ -27,8 +27,8 @@ from socket import error as socket_error
 # ----------------------------------------------------------------------------
 
 # HOST = "localhost" # Local network
-HOST = "192.168.0.12"  # Local network
-
+#HOST = "192.168.0.12"  # Local network
+HOST = "169.231.85.233"
 
 def update_command(request='check'):
     return request
@@ -43,7 +43,7 @@ class ClientConnect(threading.Thread):
     dev_dict = {
         'dev1': {'PORT': 50007},
         'dev2': {'PORT': 50008},
-        #        'dev3': {'PORT': 50009},
+        'dev3': {'PORT': 50009},
         #        'dev4': {'PORT': 50010},
         #'dev5':{'PORT':50011},
         #'dev6':{'PORT':50012}
@@ -152,12 +152,13 @@ def check_tcp_server(cmd='check', dev=1):
         """
     # ====== Client Variables:
     #HOST = "localhost"
-    HOST = "192.168.0.12"
+    #HOST = "192.168.0.12"
+    HOST = "169.231.85.233"
     received = ""
     devid = "dev{}".format(dev)
     dev_dict = {'dev1': {'PORT': 50007},
                 'dev2': {'PORT': 50008},
-                #                'dev3': {'PORT': 50009},
+                'dev3': {'PORT': 50009},
                 #                'dev4': {'PORT': 50010},
                 # 'dev5':{'PORT':50011},
                 # 'dev6':{'PORT':50012}
