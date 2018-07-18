@@ -199,8 +199,7 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 
 class ServerThread(threading.Thread):
     #HOST = "localhost"
-    #HOST = "192.168.0.12"  # Local net
-    HOST = "169.231.85.233"
+    HOST = "192.168.1.11"  # Local net
 
     def __init__(self, serverid='dev1', HOST=HOST, PORT=50007):
         print 'serving %s' % serverid
@@ -219,8 +218,7 @@ if __name__ == "__main__":
     print " ====== SERVER -- RUNNING ====== "
 
     #HOST = "localhost"
-    #HOST = "192.168.0.12"  # Local net
-    HOST = "169.231.85.233"
+    HOST = "192.168.1.11"  # Local net
 
 #    dev_list1 = ['dev1']
     server_thread_list = []
