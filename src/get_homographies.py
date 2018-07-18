@@ -102,7 +102,7 @@ depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (dept
 
 if os.path.exists(video_location + 'ir_full_vid/'):
     shutil.rmtree(video_location + 'ir_full_vid/')
-os.makedirs(video_location + 'depth_full_vid/')
+os.makedirs(video_location + 'ir_full_vid/')
 if os.path.exists(video_location + 'depth_full_vid/'):
     shutil.rmtree(video_location + 'depth_full_vid/')
 os.makedirs(video_location + 'depth_full_vid/')
@@ -114,7 +114,6 @@ depth_name = video_location + 'depth_full_vid/depth_frame_'
 
 def nothing(x):
     pass
-
 
 drawing = False
 ix = 0
@@ -227,7 +226,7 @@ while not done:
             cv2.imshow('rgb', rgb_find)
             if g == 27:
                 leave = True
-            elif g == 115:
+            elif g == 115: #s key
                 rgb_flag = True
         while ((not ir_flag) & (not leave)):
             g = cv2.waitKey(1) & 255
@@ -249,7 +248,6 @@ while not done:
 
             ir_temp = cv2.GaussianBlur(ir_img, (ir_blur, ir_blur), 0)
             ret, ir_temp = cv2.threshold(ir_temp, ir_thresh, 255, cv2.THRESH_BINARY_INV)
-
             # detect pattern
             rgb_viz, rgb_corners, rgb_detected = detectGrid(
                 rgb_temp[rgb_pts[0, 1]:rgb_pts[1, 1], rgb_pts[0, 0]:rgb_pts[1, 0], :])
@@ -264,6 +262,10 @@ while not done:
             disp = np.hstack((ir_place, rgb_place))
             disp = np.uint8(disp)
             cv2.imshow('vid', disp)
+            if rgb_detected:
+                print("rgbyes")
+            if ir_detected:
+                print("iryes")
             if rgb_detected:
                 for i in range(16):
                     pos1 = int(rgb_corners[i, 0, 0] / 2 + rgb_pts[0, 0] / 2)
