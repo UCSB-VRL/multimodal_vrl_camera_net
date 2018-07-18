@@ -21,7 +21,7 @@ devN = 1
 
 #############################################################################
 # set-up primesense camera
-dist = '/home/reed/Install/kinect/OpenNI-Linux-Arm-2.2/Redist'
+dist = '/home/carlos/Install/kinect/OpenNI-Linux-Arm-2.2/Redist'
 # Initialize openni and check
 openni2.initialize(dist)
 if (openni2.is_initialized()):
@@ -147,7 +147,7 @@ if cv2.__version__ == '3.1.0':
 else:
     fourcc = cv2.cv.CV_FOURCC('M', 'P', 'E', 'G')
 vid_num = 1
-video_location = '/home/reed/Videos/'
+video_location = '/home/carlos/Videos/'
 rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
 ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
 depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
