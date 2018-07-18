@@ -61,11 +61,11 @@ def get_depth():
     Returns numpy ndarrays representing the raw and ranged depth images.
     Outputs:
         dmap:= distancemap in mm, 1L ndarray, dtype=uint16, min=0, max=2**12-1
-        d4d := depth for dislay, 3L ndarray, dtype=uint8, min=0, max=255    
-    Note1: 
+        d4d := depth for dislay, 3L ndarray, dtype=uint8, min=0, max=255
+    Note1:
         fromstring is faster than asarray or frombuffer
-    Note2:     
-        .reshape(120,160) #smaller image for faster response 
+    Note2:
+        .reshape(120,160) #smaller image for faster response
                 OMAP/ARM default video configuration
         .reshape(240,320) # Used to MATCH RGB Image (OMAP/ARM)
                 Requires .set_video_mode
@@ -212,7 +212,7 @@ while not done:
         rec = True
         ready = True
         new = False
-        
+
     elif server_response == "stop":
         if f != 0:
             print "Stopped recording"
@@ -228,7 +228,7 @@ while not done:
         for value in rec_time:
             timefile.write(str(value) + "/n")
         timefile.close()
-        
+
     elif server_response == "restart":
         if not new:
             # release the videos to be rerecorded
@@ -245,7 +245,7 @@ while not done:
             rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
             ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
             depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
-            
+
             if os.path.exists(video_location + 'ir_full_vid_' + str(vid_num) + '/'):
                 shutil.rmtree(video_location + 'ir_full_vid_' + str(vid_num) + '/')
             os.makedirs(video_location + 'ir_full_vid_' + str(vid_num) + '/')
@@ -254,7 +254,7 @@ while not done:
             os.makedirs(video_location + 'depth_full_vid_' + str(vid_num) + '/')
             ir_name = video_location + 'ir_full_vid_' + str(vid_num) + '/ir_frame_'
             depth_name = video_location + 'depth_full_vid_' + str(vid_num) + '/depth_frame_'
-        
+
     elif server_response == "new":
         if not new:
             # release the previous videos recorded
@@ -269,13 +269,13 @@ while not done:
             rec = False
             ready = True
             new = True
-            # set-up new videos 
+            # set-up new videos
             vid_num += 1
             f = 0
             rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
             ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
             depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
-            
+
             if os.path.exists(video_location + 'ir_full_vid_' + str(vid_num) + '/'):
                 shutil.rmtree(video_location + 'ir_full_vid_' + str(vid_num) + '/')
             os.makedirs(video_location + 'ir_full_vid_' + str(vid_num) + '/')
@@ -284,12 +284,12 @@ while not done:
             os.makedirs(video_location + 'depth_full_vid_' + str(vid_num) + '/')
             ir_name = video_location + 'ir_full_vid_' + str(vid_num) + '/ir_frame_'
             depth_name = video_location + 'depth_full_vid_' + str(vid_num) + '/depth_frame_'
-        
+
     elif server_response == "close":
         done = True
         rec = False
         ready = False
-        
+
     if rec:
         f += 1
         rgb_vid.write(rgb_frame)
@@ -297,9 +297,10 @@ while not done:
         depth_vid.write(depth_frame)
         np.save(ir_name + str(f), full_ir)
         np.save(depth_name + str(f), full_depth)
-        rec_time.append(server_time)
+        rec_time.append()
+        rec_time.append("frame" + f + ": " + server_time)
         print ("frame No. recorded ", f)
-    
+
     # get commands from usre input
     if k == 27:  # esc key
         done = True
@@ -324,7 +325,7 @@ ir_vid.release()
 depth_vid.release()
 timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
 for value in rec_time:
-    timefile.write(str(value) + "/n")
+    timefile.write(str(value) + "\n")
 timefile.close()
 clientConnectThread.update_command("close_")
 cv2.destroyWindow("live")
