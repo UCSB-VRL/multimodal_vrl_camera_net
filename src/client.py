@@ -27,8 +27,7 @@ from socket import error as socket_error
 # ----------------------------------------------------------------------------
 
 # HOST = "localhost" # Local network
-#HOST = "192.168.0.12"  # Local network
-HOST = "169.231.85.233"
+HOST = "192.168.1.11"  # Local network
 
 def update_command(request='check'):
     return request
@@ -152,8 +151,7 @@ def check_tcp_server(cmd='check', dev=1):
         """
     # ====== Client Variables:
     #HOST = "localhost"
-    #HOST = "192.168.0.12"
-    HOST = "169.231.85.233"
+    HOST = "192.168.1.11"
     received = ""
     devid = "dev{}".format(dev)
     dev_dict = {'dev1': {'PORT': 50007},
