@@ -96,18 +96,18 @@ fps = 8.0
 # ==============================================================================
 fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
 video_location = '/home/carlos/Videos/'
-rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
-depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
+#rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
+#ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
+#depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
 
-if os.path.exists(video_location + 'ir_full_vid/'):
-    shutil.rmtree(video_location + 'ir_full_vid/')
-os.makedirs(video_location + 'ir_full_vid/')
-if os.path.exists(video_location + 'depth_full_vid/'):
-    shutil.rmtree(video_location + 'depth_full_vid/')
-os.makedirs(video_location + 'depth_full_vid/')
-ir_name = video_location + 'ir_full_vid/ir_frame_'
-depth_name = video_location + 'depth_full_vid/depth_frame_'
+#if os.path.exists(video_location + 'ir_full_vid/'):
+    #shutil.rmtree(video_location + 'ir_full_vid/')
+#os.makedirs(video_location + 'ir_full_vid/')
+#if os.path.exists(video_location + 'depth_full_vid/'):
+    #shutil.rmtree(video_location + 'depth_full_vid/')
+#os.makedirs(video_location + 'depth_full_vid/')
+#ir_name = video_location + 'ir_full_vid/ir_frame_'
+#depth_name = video_location + 'depth_full_vid/depth_frame_'
 
 ###############################################################################
 
@@ -212,7 +212,7 @@ while not done:
     depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
 
     times += 1
-    if times == 80:  # space
+    if times == 10:  # space 80
         times = 0
         rgb_img = rgb_frame.copy()
         ir_img = ir_frame.copy()
@@ -257,21 +257,21 @@ while not done:
             ir_temp[ir_pts[0, 1]:ir_pts[1, 1], ir_pts[0, 0]:ir_pts[1, 0], :] = ir_viz
 
             rgb_place = cv2.resize(rgb_temp, (320, 240))
-
             ir_place[place_ir:place_ir + 206, :, :] = ir_temp
-            disp = np.hstack((ir_place, rgb_place))
+
+            ir_place_c = np.zeros((rgb_viz.shape[0], ir_viz.shape[1], channels), dtype='uint8')
+            place_ir_c = (rgb_viz.shape[0] - ir_viz.shape[0]) / 2
+            ir_place_c[place_ir_c:place_ir_c + ir_viz.shape[0], :, :] = ir_viz
+
+            disp = np.hstack((ir_place_c, rgb_viz))
             disp = np.uint8(disp)
             cv2.imshow('vid', disp)
-            if rgb_detected:
-                print("rgbyes")
-            if ir_detected:
-                print("iryes")
             if rgb_detected:
                 for i in range(16):
                     pos1 = int(rgb_corners[i, 0, 0] / 2 + rgb_pts[0, 0] / 2)
                     pos2 = int(rgb_corners[i, 0, 1] / 2 + rgb_pts[0, 1] / 2)
                     cv2.circle(depth_frame, (pos1, pos2), 3, (0, 0, 255), -1)
-            cv2.imshow('depth', depth_frame)
+            #cv2.imshow('depth', depth_frame)
 
             rgb_thresh = cv2.getTrackbarPos('RGB Threshold', 'vid')
             rgb_blur = cv2.getTrackbarPos('RGB Blur', 'vid')
@@ -316,11 +316,11 @@ while not done:
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_frame))
     cv2.imshow("live", disp)
-    rgb_vid.write(rgb_frame)
-    ir_vid.write(ir_frame)
-    depth_vid.write(depth_frame)
-    np.save(ir_name + str(f), full_ir)
-    np.save(depth_name + str(f), full_depth)
+    #rgb_vid.write(rgb_frame)
+    #ir_vid.write(ir_frame)
+    #depth_vid.write(depth_frame)
+    #np.save(ir_name + str(f), full_ir)
+    #np.save(depth_name + str(f), full_depth)
 
     print ("frame No.", f)
     if k == 27:  # esc key
@@ -330,9 +330,9 @@ while not done:
 rgb_stream.stop()
 depth_stream.stop()
 openni2.unload()
-rgb_vid.release()
-ir_vid.release()
-depth_vid.release()
+#rgb_vid.release()
+#ir_vid.release()
+#depth_vid.release()
 cv2.destroyWindow("vid")
 cv2.destroyWindow("ir")
 cv2.destroyWindow("rgb")
