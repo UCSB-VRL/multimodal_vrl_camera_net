@@ -11,6 +11,7 @@ import os
 from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
+import time
 
 #############################################################################
 # set-up primesense camera
@@ -70,18 +71,27 @@ def get_depth():
     d4d = 255 - cv2.cvtColor(d4d, cv2.COLOR_GRAY2RGB)
     return dmap, d4d
 
+def makedir():
+    global rgb_vid, ir_vid, depth_vid, ir_name, depth_name, rgb_name, recording
+    video_location = '/home/carlos/Videos/'
+    recording = 1
+    while os.path.exists(video_location+'recording_'+str(recording)+'/'):
+        recording += 1
+    recording = str(recording)
+    oldmask = os.umask(000)
+    os.makedirs(video_location+'recording_'+recording+'/', 0777)
+    os.umask(oldmask)
+    video_location =  video_location+'recording_'+recording+'/'
+    rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
+    ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
+    depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
 
-def get_8bit(frame):
-    h, w = frame.shape
-    output = np.zeros((h, w, 3),dtype = 'uint8')
-    temp1 = frame/256
-    temp2 = frame - temp1*256
-    output[:, :, 1] = temp1.astype('uint8', casting='unsafe')
-    output[:, :, 0] = temp2.astype('uint8', casting='unsafe')
-    output[:, :, 2] = output[:, :, 0]
-    output = output.astype('uint8')
-    return output
-
+    os.makedirs(video_location+'ir_full_vid')
+    os.makedirs(video_location+'depth_full_vid')
+    os.makedirs(video_location+'rgb_full_vid')
+    ir_name = video_location+'ir_full_vid/ir_frame_'
+    depth_name = video_location+'depth_full_vid/depth_frame_'
+    rgb_name = video_location+'rgb_full_vid/rgb_frame_'
 
 # ==============================================================================
 # Video .avi output setup
@@ -109,24 +119,14 @@ if cv2.__version__ == '3.1.0':
     fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
 else:
     fourcc = cv2.cv.CV_FOURCC('M', 'P', 'E', 'G')
-video_location = '/home/carlos/Videos/'
-rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
-depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
 
-if not os.path.exists(video_location+'ir_full_vid/'):
-    os.makedirs(video_location+'ir_full_vid/')
-if not os.path.exists(video_location+'depth_full_vid/'):
-    os.makedirs(video_location+'depth_full_vid/')
-ir_name = video_location+'ir_full_vid/ir_frame_'
-depth_name = video_location+'depth_full_vid/depth_frame_'
-
-print ("Press 'esc' to terminate")
+print ("Press 'esc' to terminate, 'r' to record, 's' to stop recording")
 f = 0   # frame counter
 done = False
+rec = False
 while not done:
-    f += 1
     k = cv2.waitKey(1) & 255
+    time.sleep(1)
     # capture frames
     rgb_frame = get_rgb()
     full_ir = therm.get_frame()
@@ -144,23 +144,34 @@ while not done:
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_frame))
     cv2.imshow("live", disp)
-    rgb_vid.write(rgb_frame)
-    ir_vid.write(ir_frame)
-    depth_vid.write(depth_frame)
     
-    np.save(ir_name+str(f),full_ir)
-    np.save(depth_name+str(f),full_depth)
+    if (rec):
+        f += 1
+        print ("frame No.", f)
+        rgb_vid.write(rgb_frame)
+        ir_vid.write(ir_frame)
+        depth_vid.write(depth_frame)
+        np.save(ir_name+str(f),full_ir)
+        np.save(depth_name+str(f),full_depth)
+        np.save(rgb_name+str(f),rgb_frame)
 
-    print ("frame No.", f)
     if k == 27:  # esc key
         done = True
+    if (k == 114 and ~rec): # r key
+        makedir()
+        f = 0
+        print("recording No.", recording)
+        rec = True
+    if (k == 115 and rec): # s key
+        rec = False
+        rgb_vid.release()
+        ir_vid.release()
+        depth_vid.release()
+        print("recording stopped and videos saved")
 
 # release resources and destoy windows
 rgb_stream.stop()
 depth_stream.stop()
 openni2.unload()
-rgb_vid.release()
-ir_vid.release()
-depth_vid.release()
 cv2.destroyWindow("live")
 print ("Completed video generation using {} codec". format(fourcc))

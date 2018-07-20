@@ -15,6 +15,7 @@ import client
 from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
+from time import gmtime, strftime
 
 # Device number
 devN = 1
@@ -148,18 +149,25 @@ else:
     fourcc = cv2.cv.CV_FOURCC('M', 'P', 'E', 'G')
 vid_num = 1
 video_location = '/home/carlos/Videos/'
-rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
-depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
 
-if os.path.exists(video_location + 'ir_full_vid_' + str(vid_num) + '/'):
-    shutil.rmtree(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-os.makedirs(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-if os.path.exists(video_location + 'depth_full_vid_' + str(vid_num) + '/'):
-    shutil.rmtree(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-os.makedirs(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-ir_name = video_location + 'ir_full_vid_' + str(vid_num) + '/ir_frame_'
-depth_name = video_location + 'depth_full_vid_' + str(vid_num) + '/depth_frame_'
+if os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
+    shutil.rmtree(video_location + 'server_recording_' + str(vid_num) + '/')
+oldmask = os.umask(000)
+os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
+os.umask(oldmask)
+
+video_location = video_location + 'server_recording_' + str(vid_num) + '/'
+
+rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
+ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
+depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
+
+os.makedirs(video_location + 'ir_full_vid/')
+os.makedirs(video_location + 'depth_full_vid/')
+os.makedirs(video_location + 'rgb_full_vid/')
+ir_name = video_location + 'ir_full_vid/ir_frame_'
+depth_name = video_location + 'depth_full_vid/depth_frame_'
+rgb_name = video_location + 'rgb_full_vid/rgb_frame_'
 
 # 'warm-up' cameras
 for i in range(80):
@@ -224,10 +232,11 @@ while not done:
         rgb_vid.release()
         ir_vid.release()
         depth_vid.release()
-        timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
-        for value in rec_time:
-            timefile.write(str(value) + "/n")
-        timefile.close()
+        df.to_csv(video_location + "timefile", sep='\t')
+        #timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
+        #for value in rec_time:
+        #    timefile.write(str(value) + "/n")
+        #timefile.close()
 
     elif server_response == "restart":
         if not new:
@@ -236,24 +245,34 @@ while not done:
             rgb_vid.release()
             ir_vid.release()
             depth_vid.release()
-            rec_time = []
+            #rec_time = []
+            cols = ["frameN", "localtime", "servertime"]
+            df = pd.DataFrame(columns=cols)
             rec = False
             ready = True
             new = True
             # set-up videos to be recorded
             f = 0
-            rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-            ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
-            depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
+            video_location = '/home/carlos/Videos/'
 
-            if os.path.exists(video_location + 'ir_full_vid_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-            os.makedirs(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-            if os.path.exists(video_location + 'depth_full_vid_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-            os.makedirs(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-            ir_name = video_location + 'ir_full_vid_' + str(vid_num) + '/ir_frame_'
-            depth_name = video_location + 'depth_full_vid_' + str(vid_num) + '/depth_frame_'
+            if os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
+                shutil.rmtree(video_location + 'server_recording_' + str(vid_num) + '/')
+            oldmask = os.umask(000)
+            os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
+            os.umask(oldmask)
+
+            video_location = video_location + 'server_recording_' + str(vid_num) + '/'
+
+            rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
+            ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
+            depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
+
+            os.makedirs(video_location + 'ir_full_vid/')
+            os.makedirs(video_location + 'depth_full_vid/')
+            os.makedirs(video_location + 'rgb_full_vid/')
+            ir_name = video_location + 'ir_full_vid/ir_frame_'
+            depth_name = video_location + 'depth_full_vid/depth_frame_'
+            rgb_name = video_location + 'rgb_full_vid/rgb_frame_'
 
     elif server_response == "new":
         if not new:
@@ -262,28 +281,36 @@ while not done:
             rgb_vid.release()
             ir_vid.release()
             depth_vid.release()
-            timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
-            for value in rec_time:
-                timefile.write(str(value) + "/n")
-            timefile.close()
+            #timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
+            #for value in rec_time:
+            #    timefile.write(str(value) + "/n")
+            #timefile.close()
+            df.to_csv(video_location + "timefile", sep='\t')
             rec = False
             ready = True
             new = True
             # set-up new videos
             vid_num += 1
             f = 0
-            rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-            ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
-            depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
 
-            if os.path.exists(video_location + 'ir_full_vid_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-            os.makedirs(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-            if os.path.exists(video_location + 'depth_full_vid_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-            os.makedirs(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-            ir_name = video_location + 'ir_full_vid_' + str(vid_num) + '/ir_frame_'
-            depth_name = video_location + 'depth_full_vid_' + str(vid_num) + '/depth_frame_'
+            video_location = '/home/carlos/Videos/'
+            if os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
+                shutil.rmtree(video_location + 'server_recording_' + str(vid_num) + '/')
+            oldmask = os.umask(000)
+            os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
+            os.umask(oldmask)
+
+            video_location = video_location + 'server_recording_' + str(vid_num) + '/'
+            rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
+            ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
+            depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
+
+            os.makedirs(video_location + 'ir_full_vid/')
+            os.makedirs(video_location + 'depth_full_vid/')
+            os.makedirs(video_location + 'rgb_full_vid/')
+            ir_name = video_location + 'ir_full_vid/ir_frame_'
+            depth_name = video_location + 'depth_full_vid/depth_frame_'
+            rgb_name = video_location + 'rgb_full_vid/rgb_frame_'
 
     elif server_response == "close":
         done = True
@@ -297,8 +324,10 @@ while not done:
         depth_vid.write(depth_frame)
         np.save(ir_name + str(f), full_ir)
         np.save(depth_name + str(f), full_depth)
-        rec_time.append()
-        rec_time.append("frame" + f + ": " + server_time)
+        np.save(rgb_name + str(f), rgb_frame)
+        #rec_time.append()
+        #rec_time.append("frame" + f + ": " + server_time)
+        df.loc[f] = [f, strftime("%Y-%m-%d %H:%M:%S",gmtime()), server_time]
         print ("frame No. recorded ", f)
 
     # get commands from usre input
@@ -323,10 +352,11 @@ openni2.unload()
 rgb_vid.release()
 ir_vid.release()
 depth_vid.release()
-timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
-for value in rec_time:
-    timefile.write(str(value) + "\n")
-timefile.close()
+#timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
+#for value in rec_time:
+#    timefile.write(str(value) + "\n")
+#timefile.close()
+df.to_csv(video_location + "timefile", sep='\t')
 clientConnectThread.update_command("close_")
 cv2.destroyWindow("live")
 time.sleep(2)

@@ -259,11 +259,11 @@ while not done:
             rgb_place = cv2.resize(rgb_temp, (320, 240))
             ir_place[place_ir:place_ir + 206, :, :] = ir_temp
 
-            ir_place_c = np.zeros((rgb_viz.shape[0], ir_viz.shape[1], channels), dtype='uint8')
-            place_ir_c = (rgb_viz.shape[0] - ir_viz.shape[0]) / 2
-            ir_place_c[place_ir_c:place_ir_c + ir_viz.shape[0], :, :] = ir_viz
+            #ir_place_c = np.zeros((rgb_viz.shape[0], ir_viz.shape[1], channels), dtype='uint8')
+            #place_ir_c = (rgb_viz.shape[0] - ir_viz.shape[0]) / 2
+            #ir_place_c[place_ir_c:place_ir_c + ir_viz.shape[0], :, :] = ir_viz
 
-            disp = np.hstack((ir_place_c, rgb_viz))
+            disp = np.hstack((ir_place, rgb_place))
             disp = np.uint8(disp)
             cv2.imshow('vid', disp)
             if rgb_detected:
