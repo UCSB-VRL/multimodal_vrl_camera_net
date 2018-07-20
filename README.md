@@ -1,5 +1,7 @@
 ## Welcome to the multimodal_vrl_camera_net repo
 
+### For instructions to run, go to the Wiki above
+
 ### Branch conditions:
 Please follow the instructions to create and name new branches:
 1. Nomenclature:
