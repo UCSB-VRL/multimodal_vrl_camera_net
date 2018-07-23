@@ -116,9 +116,9 @@ fps = 8.0
 # THE CODECS
 # ==============================================================================
 if cv2.__version__ == '3.1.0':
-    fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
+    fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
 else:
-    fourcc = cv2.cv.CV_FOURCC('M', 'P', 'E', 'G')
+    fourcc = cv2.cv.CV_FOURCC('X', 'V', 'I', 'D')
 
 print ("Press 'esc' to terminate, 'r' to record, 's' to stop recording")
 f = 0   # frame counter
@@ -126,7 +126,7 @@ done = False
 rec = False
 while not done:
     k = cv2.waitKey(1) & 255
-    time.sleep(1)
+    #time.sleep(1)
     # capture frames
     rgb_frame = get_rgb()
     full_ir = therm.get_frame()

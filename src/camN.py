@@ -140,9 +140,9 @@ fps = 8.0
 # Video Recording set-up
 # ==============================================================================
 if cv2.__version__ == '3.1.0':
-    fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
+    fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
 else:
-    fourcc = cv2.cv.CV_FOURCC('M', 'P', 'E', 'G')
+    fourcc = cv2.cv.CV_FOURCC('X', 'V', 'I', 'D')
 vid_num = 2
 video_location = '/home/carlos/Videos/'
 rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
