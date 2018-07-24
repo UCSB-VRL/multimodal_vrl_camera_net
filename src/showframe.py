@@ -1,12 +1,13 @@
 import numpy as np
 import cv2
-import time
-from seek_camera import thermal_camera
+import os
 
 def start():
     global curdir
-    print("Type directory containing frame folders.")
+    print("Type directory containing frame folders or nothing to use current working directory.")
     curdir = raw_input()
+    if (curdir == ""):
+        curdir = os.getcwd()
 
 def get_8bit_frame(frame):
     output = frame >> 2
