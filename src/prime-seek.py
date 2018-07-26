@@ -14,6 +14,10 @@ from seek_camera import thermal_camera
 import time
 
 #############################################################################
+# set video saving location
+#video_location = '/home/carlos/Videos/' #locally
+video_location = '/home/carlos/vrlserver/videos/raw/' #intern server
+
 # set-up primesense camera
 dist = "/home/carlos/Install/kinect/OpenNI-Linux-Arm-2.2/Redist"
 # Initialize openni and check
@@ -72,8 +76,7 @@ def get_depth():
     return dmap, d4d
 
 def makedir():
-    global rgb_vid, ir_vid, depth_vid, ir_name, depth_name, rgb_name, recording
-    video_location = '/home/carlos/Videos/'
+    global rgb_vid, ir_vid, depth_vid, ir_name, depth_name, rgb_name, recording, video_location
     recording = 1
     while os.path.exists(video_location+'recording_'+str(recording)+'/'):
         recording += 1

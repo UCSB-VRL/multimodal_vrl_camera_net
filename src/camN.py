@@ -16,6 +16,9 @@ from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
 
+#video_location = '/home/carlos/Videos/' #locally
+video_location = '/home/carlos/vrlserver/videos/raw/' #intern server
+
 # Device number
 devN = 2 # 3
 
@@ -144,7 +147,6 @@ if cv2.__version__ == '3.1.0':
 else:
     fourcc = cv2.cv.CV_FOURCC('X', 'V', 'I', 'D')
 vid_num = 2
-video_location = '/home/carlos/Videos/'
 rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
 ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
 depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)

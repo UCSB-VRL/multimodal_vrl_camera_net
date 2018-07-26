@@ -8,6 +8,7 @@ Use to record with the primesense camera RGB and depth cameras and the seek ther
 import numpy as np
 import cv2
 import os
+import time
 import shutil
 from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
@@ -123,7 +124,7 @@ ir_pts = rgb_pts.copy()
 
 
 def get_rgb_pts(event, x, y, flags, param):
-    global drawing, ix, iy, rgb_pts
+    global drawing, ix, iy, rgb_pts, rgb_img, rgb_find
     if event == cv2.EVENT_LBUTTONDOWN:
         rgb_pts[0, 0] = x
         rgb_pts[0, 1] = y
@@ -132,14 +133,16 @@ def get_rgb_pts(event, x, y, flags, param):
     elif event == cv2.EVENT_LBUTTONUP:
         rgb_pts[1, 0] = x
         rgb_pts[1, 1] = y
+        cv2.rectangle(rgb_find, (ix, iy), (x, y), (0, 255, 0), 1)
         drawing = False
     elif event == cv2.EVENT_MOUSEMOVE:
         if drawing == True:
+            rgb_find = rgb_img.copy()
             cv2.rectangle(rgb_find, (ix, iy), (x, y), (0, 255, 0), 1)
 
 
 def get_ir_pts(event, x, y, flags, param):
-    global drawing, ix, iy, ir_pts
+    global drawing, ix, iy, ir_pts, ir_img, ir_find
     if event == cv2.EVENT_LBUTTONDOWN:
         ir_pts[0, 0] = x
         ir_pts[0, 1] = y
@@ -148,9 +151,11 @@ def get_ir_pts(event, x, y, flags, param):
     elif event == cv2.EVENT_LBUTTONUP:
         ir_pts[1, 0] = x
         ir_pts[1, 1] = y
+        cv2.rectangle(ir_find, (ix, iy), (x, y), (0, 255, 0), 1)
         drawing = False
     elif event == cv2.EVENT_MOUSEMOVE:
         if drawing == True:
+            ir_find = ir_img.copy()
             cv2.rectangle(ir_find, (ix, iy), (x, y), (0, 255, 0), 1)
 
 
@@ -212,7 +217,7 @@ while not done:
     depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
 
     times += 1
-    if times == 10:  # space 80
+    if times == 30:  # space 80
         times = 0
         rgb_img = rgb_frame.copy()
         ir_img = ir_frame.copy()
@@ -259,10 +264,6 @@ while not done:
             rgb_place = cv2.resize(rgb_temp, (320, 240))
             ir_place[place_ir:place_ir + 206, :, :] = ir_temp
 
-            #ir_place_c = np.zeros((rgb_viz.shape[0], ir_viz.shape[1], channels), dtype='uint8')
-            #place_ir_c = (rgb_viz.shape[0] - ir_viz.shape[0]) / 2
-            #ir_place_c[place_ir_c:place_ir_c + ir_viz.shape[0], :, :] = ir_viz
-
             disp = np.hstack((ir_place, rgb_place))
             disp = np.uint8(disp)
             cv2.imshow('vid', disp)
@@ -282,6 +283,7 @@ while not done:
                 rgb_blur += 1
             if (ir_blur % 2) != 1:
                 ir_blur += 1
+
 
             if g == 27:  # esc
                 leave = True

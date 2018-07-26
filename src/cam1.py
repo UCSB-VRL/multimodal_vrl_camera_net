@@ -17,6 +17,9 @@ from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
 from time import gmtime, strftime
 
+#video_location = '/home/carlos/Videos/' #locally
+video_location = '/home/carlos/vrlserver/videos/raw/' #intern server
+
 # Device number
 devN = 1
 
