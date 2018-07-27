@@ -161,7 +161,7 @@ def get_ir_pts(event, x, y, flags, param):
 
 # pattern dimensions for the grid detection and drawing
 r = 4
-c = 4
+c = 3
 pattern_size = (r, c)  # circles grid
 
 
@@ -268,7 +268,7 @@ while not done:
             disp = np.uint8(disp)
             cv2.imshow('vid', disp)
             if rgb_detected:
-                for i in range(16):
+                for i in range(12):
                     pos1 = int(rgb_corners[i, 0, 0] / 2 + rgb_pts[0, 0] / 2)
                     pos2 = int(rgb_corners[i, 0, 1] / 2 + rgb_pts[0, 1] / 2)
                     cv2.circle(depth_frame, (pos1, pos2), 3, (0, 0, 255), -1)
@@ -300,14 +300,14 @@ while not done:
                                              ir_corners.reshape(-1, 2), cv2.RANSAC, 44)
                 Hinv, mask2 = cv2.findHomography(
                     ir_corners.reshape(-1, 2), rgb_corners.reshape(-1, 2), cv2.RANSAC, 44)
-                H = np.hstack((H, [[0], [0], [0]]))
-                Hinv = np.hstack((Hinv, [[0], [0], [0]]))
-                distance = np.zeros((16, 1), dtype='uint16')
-                for i in range(16):
+                #H = np.hstack((H, [[0], [0], [0]]))
+                #Hinv = np.hstack((Hinv, [[0], [0], [0]]))
+                distance = np.zeros((12, 1), dtype='uint16')
+                for i in range(12):
                     pos1 = int(rgb_corners[i, 0, 1])
                     pos2 = int(rgb_corners[i, 0, 0])
                     distance[i] = np.average(full_depth[pos1 - 3:pos1 + 3, pos2 - 3:pos2 + 3])
-                distance = np.reshape(distance, (4, 4))
+                distance = np.reshape(distance, (4, 3))
                 H = np.vstack((H, distance))
                 Hinv = np.vstack((Hinv, distance))
                 num += 1
