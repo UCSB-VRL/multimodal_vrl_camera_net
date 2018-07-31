@@ -11,6 +11,7 @@ import os
 from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
+from use_homographies import get_pos
 import time
 
 #############################################################################
@@ -141,8 +142,15 @@ while not done:
 
     # make visible
     ir_frame = therm.get_8bit_frame(full_ir)
-    ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame
-    depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
+    #ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame
+    #depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
+    # homography calulcations
+    homog = get_pos()
+    depthm = np.mean(dmap[70:170,110:210])
+    #ir_place = homog.ir_conv(ir_frame,depthm) #ir to rgb
+    depth_place = homog.rgb_conv(depth_frame,depthm)
+    rgb_frame = homog.rgb_conv(rgb_frame,depthm)
+    ir_place = ir_frame
 
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_frame))
