@@ -79,13 +79,13 @@ def get_depth():
 def makedir():
     global rgb_vid, ir_vid, depth_vid, ir_name, depth_name, rgb_name, recording, video_location
     recording = 1
-    while os.path.exists(video_location+'recording_'+str(recording)+'/'):
+    while os.path.exists(video_location+'cam1recording_'+str(recording)+'/'):
         recording += 1
     recording = str(recording)
     oldmask = os.umask(000)
-    os.makedirs(video_location+'recording_'+recording+'/', 0777)
+    os.makedirs(video_location+'cam1recording_'+recording+'/', 0777)
     os.umask(oldmask)
-    video_location =  video_location+'recording_'+recording+'/'
+    video_location =  video_location+'cam1recording_'+recording+'/'
     rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
     ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
     depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
@@ -139,21 +139,22 @@ while not done:
     full_ir = cv2.flip(full_ir,1)
     full_depth = cv2.flip(full_depth,1)
     depth_frame = cv2.flip(depth_frame,1)
-
-    # make visible
     ir_frame = therm.get_8bit_frame(full_ir)
-    #ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame
-    #depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
-    # homography calulcations
+
+    #ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame #for no homography
+    #rgb_place = rgb_frame #for no homography
+    #depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame #for no homog or RGB/D view
+
+    # Homography calulcations
     homog = get_pos()
     depthm = np.mean(dmap[70:170,110:210])
-    #ir_place = homog.ir_conv(ir_frame,depthm) #ir to rgb
-    depth_place = homog.rgb_conv(depth_frame,depthm)
-    rgb_frame = homog.rgb_conv(rgb_frame,depthm)
-    ir_place = ir_frame
+    #ir_place = homog.ir_conv(ir_frame,depthm) #RGB/D view
+    ir_place = ir_frame #IR view
+    depth_place = homog.rgb_conv(depth_frame,depthm) #IR view
+    rgb_place = homog.rgb_conv(rgb_frame,depthm) #IR view
 
     # display and write video
-    disp = np.hstack((depth_place, ir_place, rgb_frame))
+    disp = np.hstack((depth_place, ir_place, rgb_place))
     cv2.imshow("live", disp)
     
     if (rec):

@@ -32,7 +32,7 @@ class get_pos():
 
     def rgb_conv(self, img, distance):
         homography = self.get_homography(distance, 'rgb')
-        return cv2.warpPerspective(img, homography, (156,206)) #shape of ir
+        return cv2.warpPerspective(img, homography, (156,206), flags = cv2.INTER_NEAREST) #shape of ir
 
     def ir_conv(self, img, distance):
         homography = self.get_homography(distance, 'ir')
@@ -44,8 +44,8 @@ class get_pos():
         self.h_ir = np.zeros((3, 3, self.num_homographies))
         self.dist = np.zeros((self.num_homographies, 1))
         for i in range(1, self.num_homographies + 1):
-            temp1 = np.loadtxt('Homographies/Hmatrix_rgb_to_ir_' + str(i) + '.out')
-            temp2 = np.loadtxt('Homographies/Hinvmatrix_ir_to_rgb_' + str(i) + '.out')
+            temp1 = np.loadtxt('/home/carlos/Documents/multimodal_vrl_camera_net/src/Homographies/Hmatrix_rgb_to_ir_' + str(i) + '.out')
+            temp2 = np.loadtxt('/home/carlos/Documents/multimodal_vrl_camera_net/src/Homographies/Hinvmatrix_ir_to_rgb_' + str(i) + '.out')
             self.h_rgb[:, :, i - 1] = temp1[0:3, 0:3]
             self.h_ir[:, :, i - 1] = temp2[0:3, 0:3]
             self.dist[i - 1] = temp1[3, 0]
