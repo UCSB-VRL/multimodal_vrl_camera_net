@@ -13,11 +13,17 @@ from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
 from use_homographies import get_pos
 import time
+import sys
+sys.path.append('../process')
+import dtdetection
+
+# Device number
+devN = 1
 
 #############################################################################
 # set video saving location
-#video_location = '/home/carlos/Videos/' #locally
-video_location = '/home/carlos/vrlserver/videos/raw/' #intern server
+#base_video_location = '/home/carlos/Videos/' #locally
+base_video_location = '/home/carlos/vrlserver/videos/raw/cam' + str(devN) + '/' #intern server
 
 # set-up primesense camera
 dist = "/home/carlos/Install/kinect/OpenNI-Linux-Arm-2.2/Redist"
@@ -79,13 +85,14 @@ def get_depth():
 def makedir():
     global rgb_vid, ir_vid, depth_vid, ir_name, depth_name, rgb_name, recording, video_location
     recording = 1
-    while os.path.exists(video_location+'cam1recording_'+str(recording)+'/'):
+    video_location = base_video_location
+    while os.path.exists(video_location+'recording_'+str(recording)+'/'):
         recording += 1
     recording = str(recording)
     oldmask = os.umask(000)
-    os.makedirs(video_location+'cam1recording_'+recording+'/', 0777)
+    os.makedirs(video_location+'recording_'+recording+'/', 0777)
     os.umask(oldmask)
-    video_location =  video_location+'cam1recording_'+recording+'/'
+    video_location =  video_location+'recording_'+recording+'/'
     rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
     ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
     depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
@@ -152,6 +159,9 @@ while not done:
     ir_place = ir_frame #IR view
     depth_place = homog.rgb_conv(depth_frame,depthm) #IR view
     rgb_place = homog.rgb_conv(rgb_frame,depthm) #IR view
+
+    # real time detection
+    rgb_place = dtdetection.check_depth(full_depth, full_ir, rgb_frame)
 
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_place))

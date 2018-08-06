@@ -15,12 +15,13 @@ import client
 from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
-
-#video_location = '/home/carlos/Videos/' #locally
-video_location = '/home/carlos/vrlserver/videos/raw/' #intern server
+from use_homographies import get_pos
 
 # Device number
 devN = 2 # 3
+
+#base_video_location = '/home/carlos/Videos/' #locally
+base_video_location = '/home/carlos/vrlserver/videos/raw/cam' + str(devN) + '/' #intern server
 
 #############################################################################
 # set-up primesense camera
@@ -146,19 +147,27 @@ if cv2.__version__ == '3.1.0':
     fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
 else:
     fourcc = cv2.cv.CV_FOURCC('X', 'V', 'I', 'D')
-vid_num = 2
-rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
-depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
 
-if os.path.exists(video_location + 'ir_full_vid_' + str(vid_num) + '/'):
-    shutil.rmtree(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-os.makedirs(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-if os.path.exists(video_location + 'depth_full_vid_' + str(vid_num) + '/'):
-    shutil.rmtree(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-os.makedirs(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-ir_name = video_location + 'ir_full_vid_' + str(vid_num) + '/ir_frame_'
-depth_name = video_location + 'depth_full_vid_' + str(vid_num) + '/depth_frame_'
+video_location = base_video_location
+vid_num = 1
+while os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
+    vid_num = vid_num + 1
+oldmask = os.umask(000)
+os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
+os.umask(oldmask)
+
+video_location = video_location + 'server_recording_' + str(vid_num) + '/'
+
+rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
+ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
+depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
+
+os.makedirs(video_location + 'ir_full_vid/')
+os.makedirs(video_location + 'depth_full_vid/')
+os.makedirs(video_location + 'rgb_full_vid/')
+ir_name = video_location + 'ir_full_vid/ir_frame_'
+depth_name = video_location + 'depth_full_vid/depth_frame_'
+rgb_name = video_location + 'rgb_full_vid/rgb_frame_'
 
 # 'warm-up' cameras
 for i in range(80):
@@ -181,15 +190,25 @@ while not done:
     rgb_frame = get_rgb()
     full_ir = therm.get_frame()
     full_depth, depth_frame = get_depth()
-
-    # make visible
+    full_ir = cv2.flip(full_ir,1)
+    full_depth = cv2.flip(full_depth,1)
+    depth_frame = cv2.flip(depth_frame,1)
     ir_frame = therm.get_8bit_frame(full_ir)
-    ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame
-    depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
+
+    #ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame #for no homography
+    #rgb_place = rgb_frame #for no homography
+    #depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame #for no homog or RGB/D view
+
+    # Homography calulcations
+    homog = get_pos()
+    depthm = np.mean(dmap[70:170,110:210])
+    #ir_place = homog.ir_conv(ir_frame,depthm) #RGB/D view
+    ir_place = ir_frame #IR view
+    depth_place = homog.rgb_conv(depth_frame,depthm) #IR view
+    rgb_place = homog.rgb_conv(rgb_frame,depthm) #IR view
 
     # display and write video
-    disp = np.hstack((depth_place, ir_place, rgb_frame))
-    disp = cv2.flip(disp, 1)
+    disp = np.hstack((depth_place, ir_place, rgb_place))
     cv2.imshow("live", disp)
 
     # Poll the server:
@@ -270,18 +289,24 @@ while not done:
             # set-up new videos
             vid_num += 1
             f = 0
-            rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-            ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
-            depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
+            video_location = base_video_location
+            if os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
+                vid_num = vid_num + 1
+            oldmask = os.umask(000)
+            os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
+            os.umask(oldmask)
 
-            if os.path.exists(video_location + 'ir_full_vid_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-            os.makedirs(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-            if os.path.exists(video_location + 'depth_full_vid_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-            os.makedirs(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-            ir_name = video_location + 'ir_full_vid_' + str(vid_num) + '/ir_frame_'
-            depth_name = video_location + 'depth_full_vid_' + str(vid_num) + '/depth_frame_'
+            video_location = video_location + 'server_recording_' + str(vid_num) + '/'
+            rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
+            ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
+            depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
+
+            os.makedirs(video_location + 'ir_full_vid/')
+            os.makedirs(video_location + 'depth_full_vid/')
+            os.makedirs(video_location + 'rgb_full_vid/')
+            ir_name = video_location + 'ir_full_vid/ir_frame_'
+            depth_name = video_location + 'depth_full_vid/depth_frame_'
+            rgb_name = video_location + 'rgb_full_vid/rgb_frame_'
 
     elif server_response == "close":
         done = True

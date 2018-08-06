@@ -15,13 +15,14 @@ import client
 from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
+from use_homographies import get_pos
 from time import gmtime, strftime
-
-#video_location = '/home/carlos/Videos/' #locally
-video_location = '/home/carlos/vrlserver/videos/raw/' #intern server
 
 # Device number
 devN = 1
+
+#base_video_location = '/home/carlos/Videos/' #locally
+base_video_location = '/home/carlos/vrlserver/videos/raw/cam' + str(devN) + '/' #intern server
 
 #############################################################################
 # set-up primesense camera
@@ -150,11 +151,11 @@ if cv2.__version__ == '3.1.0':
     fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
 else:
     fourcc = cv2.cv.CV_FOURCC('X', 'V', 'I', 'D')
-vid_num = 1
-video_location = '/home/carlos/Videos/'
 
-if os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
-    shutil.rmtree(video_location + 'server_recording_' + str(vid_num) + '/')
+video_location = base_video_location
+vid_num = 1
+while os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
+    vid_num = vid_num + 1
 oldmask = os.umask(000)
 os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
 os.umask(oldmask)
@@ -183,7 +184,7 @@ tic = time.time()
 rec = False
 ready = True
 new = True
-action = ""
+action = "restart"
 rec_time = []
 
 print ("Press 'esc' to terminate")
@@ -194,15 +195,25 @@ while not done:
     rgb_frame = get_rgb()
     full_ir = therm.get_frame()
     full_depth, depth_frame = get_depth()
-
-    # make visible
+    full_ir = cv2.flip(full_ir,1)
+    full_depth = cv2.flip(full_depth,1)
+    depth_frame = cv2.flip(depth_frame,1)
     ir_frame = therm.get_8bit_frame(full_ir)
-    ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame
-    depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
+
+    #ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame #for no homography
+    #rgb_place = rgb_frame #for no homography
+    #depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame #for no homog or RGB/D view
+
+    # Homography calulcations
+    homog = get_pos()
+    depthm = np.mean(dmap[70:170,110:210])
+    #ir_place = homog.ir_conv(ir_frame,depthm) #RGB/D view
+    ir_place = ir_frame #IR view
+    depth_place = homog.rgb_conv(depth_frame,depthm) #IR view
+    rgb_place = homog.rgb_conv(rgb_frame,depthm) #IR view
 
     # display and write video
-    disp = np.hstack((depth_place, ir_place, rgb_frame))
-    disp = cv2.flip(disp, 1)
+    disp = np.hstack((depth_place, ir_place, rgb_place))
     cv2.imshow("live", disp)
 
     # Poll the server:
@@ -256,9 +267,9 @@ while not done:
             new = True
             # set-up videos to be recorded
             f = 0
-            video_location = '/home/carlos/Videos/'
+            video_location = base_video_location
 
-            if os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
+            while os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
                 shutil.rmtree(video_location + 'server_recording_' + str(vid_num) + '/')
             oldmask = os.umask(000)
             os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
@@ -296,9 +307,9 @@ while not done:
             vid_num += 1
             f = 0
 
-            video_location = '/home/carlos/Videos/'
+            video_location = base_video_location
             if os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'server_recording_' + str(vid_num) + '/')
+                vid_num = vid_num + 1
             oldmask = os.umask(000)
             os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
             os.umask(oldmask)
