@@ -22,26 +22,27 @@ def check_ir(rects, frame): #if there is a strong heat signature in the depth re
             # print(np.median(crop))
             # print(np.amin(crop))
             # print(np.amax(crop))
-            if (np.mean(crop) > 15600 or np.amax(crop) - np.amin(crop) > 400):
+            if (np.mean(crop) > 15700 or np.amax(crop) - np.amin(crop) > 400):
                 positive.append(rect)
             else:
                 negative.append(rect)
     return np.array(positive), np.array(negative)
 
 def check_depth(depth): # segment depthmap
+    d4d = depth
     d4d = np.uint8(depth.astype(float) * 255 / 2**12 - 1) # make depth 8 bit
-    d4d = d4d/32 # round to 3 bit
-    d4d = d4d*32 # make rounded number in 8 bit space
-    cmap = cv2.Canny(d4d,0,250) # get edges
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)) # connect edges
+    #d4d = d4d/16 # round to 4 bit
+    #d4d = d4d*16 # make rounded number in 8 bit space
+    cmap = cv2.Canny(d4d,100,200) # get edges
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(2,2)) # connect edges
     dilated = cv2.dilate(cmap, kernel)
     contoured, contours, hierarchy = cv2.findContours(dilated, cv2.RETR_EXTERNAL ,cv2.CHAIN_APPROX_SIMPLE) # get contours from edge map
     rects = np.zeros(shape=(len(contours), 4))
     for i in range(len(contours)): # get coordinates for bounding boxes
-        if len(contours[i]) > 50 and len(contours[i]) < 800:
+        if len(contours[i]) > 50 and len(contours[i]) < 700:
             x, y, w, h = cv2.boundingRect(contours[i])
             rects[i] = [x, y, x+w, y+h]
-    full_rects = non_max_suppression(rects, probs=None, overlapThresh=.4) #combine overlapping boxes
+    full_rects = non_max_suppression(rects, probs=None, overlapThresh=0.8) #combine overlapping boxes
     return full_rects
 
 def check_rgb(rgb): #HOG person detector
@@ -84,8 +85,8 @@ def human_detector(rgb, depth, ir): #takes raw images without homography applied
         cv2.rectangle(rgb, (rect[0], rect[1]), (rect[2], rect[3]), (255, 0, 0), 1) #blue for rgb human in it
     for rect in pos_depth:
         cv2.rectangle(rgb, (rect[0], rect[1]), (rect[2], rect[3]), (255, 0, 255), 1) #purple for depth&ir human in it
-    for rect in neg_depth:
-        cv2.rectangle(rgb, (rect[0], rect[1]), (rect[2], rect[3]), (0, 0, 255), 1) #red for no ir human in it
+    #for rect in neg_depth:
+        #cv2.rectangle(rgb, (rect[0], rect[1]), (rect[2], rect[3]), (0, 0, 255), 1) #red for no ir human in it
     for rect in strong_rect:
         cv2.rectangle(rgb, (rect[0], rect[1]), (rect[2], rect[3]), (0, 255, 0), 1) #grean for strong chance
 
