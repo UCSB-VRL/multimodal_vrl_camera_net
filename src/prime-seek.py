@@ -15,7 +15,7 @@ from use_homographies import get_pos
 import time
 import sys
 sys.path.append('../process')
-import dtdetection
+import human_detector
 
 # Device number
 devN = 1
@@ -161,7 +161,7 @@ while not done:
     rgb_place = homog.rgb_conv(rgb_frame,depthm) #IR view
 
     # real time detection
-    rgb_place = dtdetection.check_depth(full_depth, full_ir, rgb_frame)
+    strong_rect, rgb_rects, pos_depth, neg_depth, rgb_place = human_detector.human_detector(rgb_frame, full_depth, full_ir)
 
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_place))
