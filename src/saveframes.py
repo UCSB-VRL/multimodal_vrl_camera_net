@@ -2,14 +2,7 @@ import numpy as np
 import os
 import shutil
 
-def start():
-    global curdir
-    print("Type directory containing frame folders or nothing to use current working directory.")
-    curdir = raw_input()
-    if (curdir == ""):
-        curdir = os.getcwd()
-
-start()
+curdir = os.getcwd()
 while (1):
     print("Type starting frame number")
     startframe = raw_input()

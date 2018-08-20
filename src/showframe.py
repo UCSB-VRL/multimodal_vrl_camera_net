@@ -22,7 +22,7 @@ def get_8bit_frame_homog(frame): #represnt thermal image in rgb space
 
 curdir = os.getcwd()
 while (1):
-    print("Type frame number to view or n to choose new directory")
+    print("Type frame number to view")
     curframe = raw_input()
     try: #load and display frame
         rgb_frame = np.load(curdir+"/rgb_full_vid/rgb_frame_"+curframe+".npy")
