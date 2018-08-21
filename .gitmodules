@@ -1,0 +1,3 @@
+[submodule "shells/pyyolo"]
+	path = shells/pyyolo
+	url = https://github.com/UCSB-VRL/pyyolo
