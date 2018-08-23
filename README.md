@@ -1,6 +1,7 @@
 ## Welcome to the multimodal_vrl_camera_net repo
 
 ### For instructions to run, go to the Wiki above
+clone: `git clone --recursive git@github.com:UCSB-VRL/multimodal_vrl_camera_net.git`
 
 ### Branch conditions:
 Please follow the instructions to create and name new branches:
