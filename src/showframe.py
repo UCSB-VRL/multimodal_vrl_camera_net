@@ -6,19 +6,16 @@ import cv2
 import os
 from use_homographies import get_pos
 
-def get_8bit_frame(frame): #represnt thermal image in rgb space
-    output = frame >> 2
-    output[output >= 4096] = 4096 - 1
-    resized = np.zeros((240,156))
-    resized[34:240,:] = output
-    resized = cv2.cvtColor(resized.astype('uint8'), cv2.COLOR_GRAY2BGR)
-    return resized
+def get_8bit_frame(frame): #represnt thermal image in rgb space for other window
+    frame = frame - np.amin(frame)
+    ir_frame = np.uint8(frame.astype(float) * 255 / np.amax(frame) - 1)
+    ir_frame = cv2.cvtColor(ir_frame.astype('uint8'), cv2.COLOR_GRAY2BGR)
+    return ir_frame
 
-def get_8bit_frame_homog(frame): #represnt thermal image in rgb space
-    output = frame >> 2
-    output[output >= 4096] = 4096 - 1
-    output = cv2.cvtColor(output.astype('uint8'), cv2.COLOR_GRAY2BGR)
-    return output
+def get_depth_frame(frame):
+    depth_frame = np.uint8(frame.astype(float) * 255 / np.amax(frame) - 1)
+    depth_frame = 255 - cv2.cvtColor(depth_frame, cv2.COLOR_GRAY2RGB)
+    return depth_frame
 
 curdir = os.getcwd()
 while (1):
@@ -27,15 +24,17 @@ while (1):
     try: #load and display frame
         rgb_frame = np.load(curdir+"/rgb_full_vid/rgb_frame_"+curframe+".npy")
         depth = np.load(curdir+"/depth_full_vid/depth_frame_"+curframe+".npy")
+        depth_frame = get_depth_frame(depth)
         ir = np.load(curdir+"/ir_full_vid/ir_frame_"+curframe+".npy")
         ir_frame = get_8bit_frame(ir)
-        depth_frame = np.uint8(depth.astype(float) * 255 / 2**12 - 1)
-        depth_frame = 255 - cv2.cvtColor(depth_frame, cv2.COLOR_GRAY2RGB)
-        disp = np.hstack((rgb_frame, depth_frame, ir_frame))
+        ir_resized = np.zeros((240,156))
+        ir_resized = cv2.cvtColor(ir_resized.astype('uint8'), cv2.COLOR_GRAY2BGR)
+        ir_resized[34:240,:] = ir_frame
+        disp = np.hstack((rgb_frame, depth_frame, ir_resized))
 
         homog = get_pos()
         depthm = np.mean(depth[70:170,110:210])
-        disp_irhomog = np.hstack((homog.rgb_conv(rgb_frame,depthm), homog.rgb_conv(depth_frame,depthm), get_8bit_frame_homog(ir)))
+        disp_irhomog = np.hstack((homog.rgb_conv(rgb_frame,depthm), homog.rgb_conv(depth_frame,depthm), ir_frame))
         
         cv2.imshow('frame', disp)
         cv2.imshow('frame_homog', disp_irhomog)
