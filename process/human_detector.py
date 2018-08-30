@@ -151,8 +151,8 @@ def human_detector(rgb, depth, ir): #takes raw images without homography applied
     for rect in pos_depth: #red for poor prediciton (just depth/ir detection)
         cv2.rectangle(rgb, (rect[0], rect[1]), (rect[2], rect[3]), (0, 0, 255), 1)
 
-    cv2.imshow("boxes", rgb)
-    cv2.waitKey(0)
+    # cv2.imshow("boxes", rgb)
+    # cv2.waitKey(0)
 
     return strong_rects, medium_rects, rgb_rects, ir_rects, pos_depth, rgb
     

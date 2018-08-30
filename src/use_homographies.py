@@ -21,14 +21,14 @@ class get_pos():
         homography = self.get_homography(distance, 'rgb')
         new_pos = homography.dot(pos)
         out = [new_pos[0], new_pos[1]] / new_pos[2]
-        return out
+        return map(int, out)
 
     def ir_to_rgb(self, x, y, distance):
         pos = np.array((x, y, 1))
         homography = self.get_homography(distance, 'ir')
         new_pos = homography.dot(pos)
         out = [new_pos[0], new_pos[1]] / new_pos[2]
-        return out
+        return map(int, out)
 
     def rgb_conv(self, img, distance):
         homography = self.get_homography(distance, 'rgb')
