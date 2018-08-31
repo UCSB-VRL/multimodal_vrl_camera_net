@@ -20,7 +20,7 @@ thresh = 0.35
 hier_thresh = 0.7
 pyyolo.init(darknet_path, datacfg, cfgfile, weightfile)
 
-def runYOLO(rgb,depth,ir):
+def interaction_detector(rgb,depth,ir):
     persons = []
     objects = []
     homog = get_pos()
@@ -47,10 +47,12 @@ def runYOLO(rgb,depth,ir):
         print("No person detected")
     if (len(objects) == 0):
         print("No object detected")
-        
 
-    cv2.imshow("boxeshomog", rgbhomog)
-    cv2.waitKey(0)
+    # cv2.imshow("boxeshomog", rgbhomog)
+    # cv2.waitKey(0)
+        
+    return rgbhomog
+
         
 def correct_bounds(output, depthm): # checks to see if part of the object is in view of the homography
     homog = get_pos()
@@ -83,11 +85,12 @@ def interacting(persons, objects, ir, depth): #check if there is interactions th
 def end_classification():
     pyyolo.cleanup()
 
+
 ####### USED FOR TESTING ########
-fullpath = "/home/carlos/vrlserver/videos/raw/cam1/recording_6"
-for item in range(22,23):
-    ir = np.load(fullpath + "/ir_full_vid/ir_frame_" + str(item) + ".npy")
-    depth = np.load(fullpath + "/depth_full_vid/depth_frame_" + str(item) + ".npy")
-    rgb = np.load(fullpath + "/rgb_full_vid/rgb_frame_" + str(item) + ".npy")
-    runYOLO(rgb,depth,ir)
-end_classification()
+# fullpath = "/home/carlos/vrlserver/videos/raw/cam1/recording_6"
+# for item in range(22,23):
+#     ir = np.load(fullpath + "/ir_full_vid/ir_frame_" + str(item) + ".npy")
+#     depth = np.load(fullpath + "/depth_full_vid/depth_frame_" + str(item) + ".npy")
+#     rgb = np.load(fullpath + "/rgb_full_vid/rgb_frame_" + str(item) + ".npy")
+#     interaction_detector(rgb,depth,ir)
+# end_classification()

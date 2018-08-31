@@ -15,7 +15,7 @@ from use_homographies import get_pos
 import time
 import sys
 sys.path.append('../process')
-import human_detector
+
 
 # Device number
 devN = 1
@@ -82,7 +82,7 @@ def get_depth():
     d4d = 255 - cv2.cvtColor(d4d, cv2.COLOR_GRAY2RGB)
     return dmap, d4d
 
-def makedir():
+def makedir(): #increments recording number and creates all the necessary folders
     global rgb_vid, ir_vid, depth_vid, ir_name, depth_name, rgb_name, recording, video_location
     recording = 1
     video_location = base_video_location
@@ -110,7 +110,7 @@ def makedir():
 #############################################################################
 # setup thermal camera
 therm = thermal_camera()
-# setup needed inormation for display and
+# setup needed information for displaying non homography image
 rgb_frame = get_rgb()
 dmap, depth_frame = get_depth()
 ir_frame = therm.get_frame()
@@ -121,7 +121,6 @@ ir_place = np.zeros((rgb_h, ir_w, channels), dtype='uint8')
 depth_place = np.zeros((depth_h, depth_w, channels), dtype='uint8')
 place_ir = rgb_h / 2 - ir_h / 2
 place_depth = rgb_h / 2 - depth_h / 2
-fps = 8.0
 
 # ==============================================================================
 # THE CODECS
@@ -135,9 +134,22 @@ print ("Press 'esc' to terminate, 'r' to record, 's' to stop recording")
 f = 0   # frame counter
 done = False
 rec = False
+# ==============================================================================
+# Real time inference
+# ==============================================================================
+human_detection = False
+interaction_detection = True
+if (human_detection):
+    import human_detector
+if (interaction_detection):
+    import interaction_detector
+
 while not done:
-    k = cv2.waitKey(1) & 255
-    #time.sleep(1)
+    if (interaction_detection):
+        k = cv2.waitKey(50) & 255
+    else:
+        k = cv2.waitKey(1) & 255
+
     # capture frames
     rgb_frame = get_rgb()
     full_ir = therm.get_frame()
@@ -160,14 +172,18 @@ while not done:
     depth_place = homog.rgb_conv(depth_frame,depthm) #IR view
     rgb_place = homog.rgb_conv(rgb_frame,depthm) #IR view
 
-    # real time detection
-    strong_rect, medium_rects, rgb_rects, ir_rects, pos_depth, rgb_place = human_detector.human_detector(rgb_frame, full_depth, full_ir)
+    # inference
+    if (human_detection):
+        strong_rect, medium_rects, rgb_rects, ir_rects, pos_depth, rgb_place = human_detector.human_detector(rgb_frame, full_depth, full_ir)
+    if (interaction_detection):
+        rgb_place = interaction_detector.interaction_detector(rgb_frame, full_depth, full_ir) #needs importstatement on line 138
+
 
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_place))
     cv2.imshow("live", disp)
     
-    if (rec):
+    if (rec): #save frames
         f += 1
         print ("frame No.", f)
         rgb_vid.write(rgb_frame)
@@ -196,4 +212,6 @@ rgb_stream.stop()
 depth_stream.stop()
 openni2.unload()
 cv2.destroyWindow("live")
+if (interaction_detection):
+    interaction_detector.end_classification()
 print ("Completed video generation using {} codec". format(fourcc))
