@@ -64,7 +64,7 @@ def correct_bounds(output, depthm): # checks to see if part of the object is in 
     return valid, output
 
 def nearby_box(person, my_object): #checks to see if two bounding boxes are close or overlapping
-    extra_dist = 10 # max distance between bounding boxes
+    extra_dist = 10 # max pixel distance between bounding boxes
     if (not(my_object['right'] < person['left'] - extra_dist or my_object['left'] > person['right'] + extra_dist) and not(my_object['bottom'] < person['top'] - extra_dist or my_object['top'] > person['bottom'] + extra_dist)):
         return True
     return False

@@ -4,6 +4,7 @@ Created on Mon Jul  3 09:54:53 2017
 @author: Julian
 
 Use to record with the primesense camera RGB and depth cameras and the seek thermal camera
+You need to heat circles in order for thermal camera to see circles
 """
 import numpy as np
 import cv2
@@ -90,32 +91,11 @@ ir_place = np.zeros((rgb_h, ir_w, channels), dtype='uint8')
 depth_place = np.zeros((depth_h, depth_w, channels), dtype='uint8')
 place_ir = rgb_h / 2 - ir_h / 2
 place_depth = rgb_h / 2 - depth_h / 2
-fps = 8.0
-
-# ==============================================================================
-# THE CODECS
-# ==============================================================================
-fourcc = cv2.VideoWriter_fourcc('M', 'P', 'E', 'G')
-video_location = '/home/carlos/Videos/'
-#rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-#ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
-#depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
-
-#if os.path.exists(video_location + 'ir_full_vid/'):
-    #shutil.rmtree(video_location + 'ir_full_vid/')
-#os.makedirs(video_location + 'ir_full_vid/')
-#if os.path.exists(video_location + 'depth_full_vid/'):
-    #shutil.rmtree(video_location + 'depth_full_vid/')
-#os.makedirs(video_location + 'depth_full_vid/')
-#ir_name = video_location + 'ir_full_vid/ir_frame_'
-#depth_name = video_location + 'depth_full_vid/depth_frame_'
-
-###############################################################################
-
 
 def nothing(x):
     pass
 
+# Variables for drawing rectangle around circle grid
 drawing = False
 ix = 0
 iy = 0
@@ -160,12 +140,12 @@ def get_ir_pts(event, x, y, flags, param):
 
 
 # pattern dimensions for the grid detection and drawing
-r = 4
-c = 3
+r = 4 #rows
+c = 3 #columns
 pattern_size = (r, c)  # circles grid
 
 
-def detectGrid(img):
+def detectGrid(img): #detects circle grid and displays checkerboard around circles when detected
     found, corners = cv2.findCirclesGrid(
         img, pattern_size, None, cv2.CALIB_CB_SYMMETRIC_GRID + cv2.CALIB_CB_CLUSTERING)
     detected = False
@@ -217,7 +197,7 @@ while not done:
     depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
 
     times += 1
-    if times == 30:  # space 80
+    if times == 30:  # 30 frames between captures
         times = 0
         rgb_img = rgb_frame.copy()
         ir_img = ir_frame.copy()
@@ -231,20 +211,21 @@ while not done:
             cv2.imshow('rgb', rgb_find)
             if g == 27:
                 leave = True
-            elif g == 115: #s key
+            elif g == 115: # s key to save rgb rect
                 rgb_flag = True
         while ((not ir_flag) & (not leave)):
             g = cv2.waitKey(1) & 255
             cv2.imshow('ir', ir_find)
             if g == 27:
                 leave = True
-            elif g == 115:
+            elif g == 115: # s key to save ir rect
                 ir_flag = True
         rgb_pts += rgb_pts
 
         while not leave:
             g = cv2.waitKey(1) & 255
 
+            # Apply Gaussian blur to both frames
             rgb_temp = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2GRAY)
             rgb_temp = cv2.resize(rgb_temp, (640, 480), interpolation=cv2.INTER_AREA)
             rgb_temp = cv2.GaussianBlur(rgb_temp, (rgb_blur, rgb_blur), 0)
@@ -272,8 +253,7 @@ while not done:
                     pos1 = int(rgb_corners[i, 0, 0] / 2 + rgb_pts[0, 0] / 2)
                     pos2 = int(rgb_corners[i, 0, 1] / 2 + rgb_pts[0, 1] / 2)
                     cv2.circle(depth_frame, (pos1, pos2), 3, (0, 0, 255), -1)
-            #cv2.imshow('depth', depth_frame)
-
+            # Set up track bars to adjust images
             rgb_thresh = cv2.getTrackbarPos('RGB Threshold', 'vid')
             rgb_blur = cv2.getTrackbarPos('RGB Blur', 'vid')
             ir_thresh = cv2.getTrackbarPos('IR Threshold', 'vid')
@@ -283,7 +263,6 @@ while not done:
                 rgb_blur += 1
             if (ir_blur % 2) != 1:
                 ir_blur += 1
-
 
             if g == 27:  # esc
                 leave = True
@@ -300,8 +279,7 @@ while not done:
                                              ir_corners.reshape(-1, 2), cv2.RANSAC, 44)
                 Hinv, mask2 = cv2.findHomography(
                     ir_corners.reshape(-1, 2), rgb_corners.reshape(-1, 2), cv2.RANSAC, 44)
-                #H = np.hstack((H, [[0], [0], [0]]))
-                #Hinv = np.hstack((Hinv, [[0], [0], [0]]))
+
                 distance = np.zeros((12, 1), dtype='uint16')
                 for i in range(12):
                     pos1 = int(rgb_corners[i, 0, 1])
@@ -318,11 +296,6 @@ while not done:
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_frame))
     cv2.imshow("live", disp)
-    #rgb_vid.write(rgb_frame)
-    #ir_vid.write(ir_frame)
-    #depth_vid.write(depth_frame)
-    #np.save(ir_name + str(f), full_ir)
-    #np.save(depth_name + str(f), full_depth)
 
     print ("frame No.", f)
     if k == 27:  # esc key
@@ -332,9 +305,6 @@ while not done:
 rgb_stream.stop()
 depth_stream.stop()
 openni2.unload()
-#rgb_vid.release()
-#ir_vid.release()
-#depth_vid.release()
 cv2.destroyWindow("vid")
 cv2.destroyWindow("ir")
 cv2.destroyWindow("rgb")

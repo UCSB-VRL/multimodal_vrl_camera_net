@@ -12,10 +12,9 @@ from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
 from use_homographies import get_pos
-import time
 import sys
+import time
 sys.path.append('../process')
-
 
 # Device number
 devN = 1
@@ -104,16 +103,13 @@ def makedir(): #increments recording number and creates all the necessary folder
     depth_name = video_location+'depth_full_vid/depth_frame_'
     rgb_name = video_location+'rgb_full_vid/rgb_frame_'
 
-# ==============================================================================
-# Video .avi output setup
-# ==============================================================================
-#############################################################################
 # setup thermal camera
 therm = thermal_camera()
-# setup needed information for displaying non homography image
+# get frames
 rgb_frame = get_rgb()
 dmap, depth_frame = get_depth()
 ir_frame = therm.get_frame()
+# setup needed information for displaying non homography image
 rgb_h, rgb_w, channels = rgb_frame.shape
 ir_h, ir_w = ir_frame.shape
 depth_h, depth_w, depth_channels = depth_frame.shape
@@ -131,22 +127,33 @@ else:
     fourcc = cv2.cv.CV_FOURCC('X', 'V', 'I', 'D')
 
 print ("Press 'esc' to terminate, 'r' to record, 's' to stop recording")
+print ("'0' for no homography, '1' for rgb/d perspective, '2' for thermal perspective")
+print ("'h' for human detector, 'i' for interaction detector")
+
 f = 0   # frame counter
+fr = 0 #frame rate counter
 done = False
 rec = False
+start = time.time()
+full_start = time.time()
+frame_rate=""
 # ==============================================================================
 # Real time inference
 # ==============================================================================
 human_detection = False
-interaction_detection = True
-if (human_detection):
-    import human_detector
-if (interaction_detection):
-    import interaction_detector
+interaction_detection = False
+
+# 0 = no homography, 1 = RGB/d perspective,2 = IR perspective
+homography_setting = 0 #defaults to 2 if running inference
 
 while not done:
+    if (human_detection):
+        import human_detector
     if (interaction_detection):
-        k = cv2.waitKey(50) & 255
+        import interaction_detector
+
+    if (interaction_detection):
+        k = cv2.waitKey(60) & 255
     else:
         k = cv2.waitKey(1) & 255
 
@@ -160,24 +167,37 @@ while not done:
     depth_frame = cv2.flip(depth_frame,1)
     ir_frame = therm.get_8bit_frame(full_ir)
 
-    #ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame #for no homography
-    #rgb_place = rgb_frame #for no homography
-    #depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame #for no homog or RGB/D view
-
-    # Homography calulcations
-    homog = get_pos()
-    depthm = np.mean(dmap[70:170,110:210])
-    #ir_place = homog.ir_conv(ir_frame,depthm) #RGB/D view
-    ir_place = ir_frame #IR view
-    depth_place = homog.rgb_conv(depth_frame,depthm) #IR view
-    rgb_place = homog.rgb_conv(rgb_frame,depthm) #IR view
+    # homographies
+    if (homography_setting == 2 or human_detection or interaction_detection):
+        homog = get_pos()
+        depthm = np.mean(dmap[70:170,110:210])
+        ir_place = ir_frame #IR view
+        depth_place = homog.rgb_conv(depth_frame,depthm) #IR view
+        rgb_place = homog.rgb_conv(rgb_frame,depthm) #IR view
+    elif homography_setting == 1: #RGB/D view
+        homog = get_pos()
+        depthm = np.mean(dmap[70:170,110:210])
+        ir_place = homog.ir_conv(ir_frame,depthm) 
+        rgb_place = rgb_frame
+        depth_place = depth_frame
+    else:
+        ir_place = np.zeros((rgb_h, ir_w, channels), dtype='uint8')
+        depth_place = np.zeros((depth_h, depth_w, channels), dtype='uint8')
+        ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame #for no homography
+        rgb_place = rgb_frame #for no homography
+        depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame #for no homog or RGB/D view
 
     # inference
     if (human_detection):
         strong_rect, medium_rects, rgb_rects, ir_rects, pos_depth, rgb_place = human_detector.human_detector(rgb_frame, full_depth, full_ir)
     if (interaction_detection):
-        rgb_place = interaction_detector.interaction_detector(rgb_frame, full_depth, full_ir) #needs importstatement on line 138
+        rgb_place = interaction_detector.interaction_detector(rgb_frame, full_depth, full_ir)
 
+    fr = fr + 1
+    if fr%4 == 0: #print avg frame rate over 4 frames
+        frame_rate=str(round(4/(time.time()- start), 2))
+        start = time.time()
+    cv2.putText(depth_place, frame_rate, (5,15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
 
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_place))
@@ -195,6 +215,24 @@ while not done:
 
     if k == 27:  # esc key
         done = True
+    if k == 49:  # 1 key
+        human_detection = False
+        interaction_detection = False
+        homography_setting = 1
+    if k == 50:  # 2 key
+        human_detection = False
+        interaction_detection = False
+        homography_setting = 2
+    if k == 48:  # 0 key
+        human_detection = False
+        interaction_detection = False
+        homography_setting = 0
+    if k == 104: #h key
+        homography_setting = 2
+        human_detection = True
+    if k == 105: #i key
+        homography_setting = 2
+        interaction_detection = True
     if (k == 114 and ~rec): # r key
         makedir()
         f = 0
@@ -214,4 +252,5 @@ openni2.unload()
 cv2.destroyWindow("live")
 if (interaction_detection):
     interaction_detector.end_classification()
+print("Average frame rate:", fr/(time.time()-full_start))
 print ("Completed video generation using {} codec". format(fourcc))

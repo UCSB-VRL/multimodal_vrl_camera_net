@@ -27,17 +27,18 @@ while (1):
         depth_frame = get_depth_frame(depth)
         ir = np.load(curdir+"/ir_full_vid/ir_frame_"+curframe+".npy")
         ir_frame = get_8bit_frame(ir)
+        #resize ir to hstack with rgb and depth
         ir_resized = np.zeros((240,156))
         ir_resized = cv2.cvtColor(ir_resized.astype('uint8'), cv2.COLOR_GRAY2BGR)
         ir_resized[34:240,:] = ir_frame
         disp = np.hstack((rgb_frame, depth_frame, ir_resized))
 
         homog = get_pos()
-        depthm = np.mean(depth[70:170,110:210])
+        depthm = np.mean(depth[70:170,110:210]) #avg depth in middle of frame
         disp_irhomog = np.hstack((homog.rgb_conv(rgb_frame,depthm), homog.rgb_conv(depth_frame,depthm), ir_frame))
         
-        cv2.imshow('frame', disp)
-        cv2.imshow('frame_homog', disp_irhomog)
+        cv2.imshow('frame', disp) #without homography
+        cv2.imshow('frame_homog', disp_irhomog) #with homography
         cv2.waitKey(500)
 
     except: #print out valid frames

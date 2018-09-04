@@ -16,29 +16,29 @@ class get_pos():
                 elif space == 'ir':
                     return self.h_ir[:, :, i]
 
-    def rgb_to_ir(self, x, y, distance):
+    def rgb_to_ir(self, x, y, distance): #x,y homography calculation
         pos = np.array((x, y, 1))
         homography = self.get_homography(distance, 'rgb')
         new_pos = homography.dot(pos)
         out = [new_pos[0], new_pos[1]] / new_pos[2]
         return map(int, out)
 
-    def ir_to_rgb(self, x, y, distance):
+    def ir_to_rgb(self, x, y, distance): #x,y homography calculation
         pos = np.array((x, y, 1))
         homography = self.get_homography(distance, 'ir')
         new_pos = homography.dot(pos)
         out = [new_pos[0], new_pos[1]] / new_pos[2]
         return map(int, out)
 
-    def rgb_conv(self, img, distance):
+    def rgb_conv(self, img, distance): #complete image homography calculation
         homography = self.get_homography(distance, 'rgb')
         return cv2.warpPerspective(img, homography, (156,206), flags = cv2.INTER_NEAREST) #shape of ir
 
-    def ir_conv(self, img, distance):
+    def ir_conv(self, img, distance): #complete image homography calculation
         homography = self.get_homography(distance, 'ir')
         return cv2.warpPerspective(img, homography, (320,240), flags = cv2.INTER_NEAREST) #shape of rgb/depth - nearest interpolation used to get rid of noise
 
-    def __init__(self, num_homographies=5):
+    def __init__(self, num_homographies=5): #read homorgraphy and dist file
         self.num_homographies = num_homographies
         self.h_rgb = np.zeros((3, 3, self.num_homographies))
         self.h_ir = np.zeros((3, 3, self.num_homographies))
