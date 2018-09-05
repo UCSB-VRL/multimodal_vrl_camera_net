@@ -123,16 +123,42 @@ if "_" in response:
     server_response, server_time = response.split("_")
 else:
     server_reponse = response
+# Create a pandas dataframe to hold the information (index starts at 1)
+cols = ["frameN", "localtime", "servertime"]
+df = pd.DataFrame(columns=cols)
 # ==============================================================================
 # Video .avi output setup
 # ==============================================================================
-#############################################################################
+
+def makedir(): #increments recording number and creates all the necessary folders
+    global rgb_vid, ir_vid, depth_vid, ir_name, depth_name, rgb_name, recording, video_location
+    recording = 1
+    video_location = base_video_location
+    while os.path.exists(video_location+'server_recording_'+str(recording)+'/'):
+        recording += 1
+    recording = str(recording)
+    oldmask = os.umask(000)
+    os.makedirs(video_location+'server_recording_'+recording+'/', 0777)
+    os.umask(oldmask)
+    video_location =  video_location+'server_recording_'+recording+'/'
+    rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
+    ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
+    depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
+
+    os.makedirs(video_location+'ir_full_vid')
+    os.makedirs(video_location+'depth_full_vid')
+    os.makedirs(video_location+'rgb_full_vid')
+    ir_name = video_location+'ir_full_vid/ir_frame_'
+    depth_name = video_location+'depth_full_vid/depth_frame_'
+    rgb_name = video_location+'rgb_full_vid/rgb_frame_'
+
 # setup thermal camera
 therm = thermal_camera()
-# setup needed inormation for display and
+# get frames
 rgb_frame = get_rgb()
 dmap, depth_frame = get_depth()
 ir_frame = therm.get_frame()
+# setup needed information for displaying non homography image
 rgb_h, rgb_w, channels = rgb_frame.shape
 depth_h, depth_w, depth_channels = depth_frame.shape
 ir_h, ir_w = ir_frame.shape
@@ -140,7 +166,7 @@ ir_place = np.zeros((rgb_h, ir_w, channels), dtype='uint8')
 depth_place = np.zeros((depth_h, depth_w, channels), dtype='uint8')
 place_ir = rgb_h / 2 - ir_h / 2
 place_depth = rgb_h / 2 - depth_h / 2
-fps = 8.0
+fps = 2
 
 # ==============================================================================
 # Video Recording set-up
@@ -150,38 +176,11 @@ if cv2.__version__ == '3.1.0':
 else:
     fourcc = cv2.cv.CV_FOURCC('X', 'V', 'I', 'D')
 
-video_location = base_video_location
-vid_num = 1
-while os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
-    vid_num = vid_num + 1
-oldmask = os.umask(000)
-os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
-os.umask(oldmask)
-
-video_location = video_location + 'server_recording_' + str(vid_num) + '/'
-
-rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
-depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
-
-os.makedirs(video_location + 'ir_full_vid/')
-os.makedirs(video_location + 'depth_full_vid/')
-os.makedirs(video_location + 'rgb_full_vid/')
-ir_name = video_location + 'ir_full_vid/ir_frame_'
-depth_name = video_location + 'depth_full_vid/depth_frame_'
-rgb_name = video_location + 'rgb_full_vid/rgb_frame_'
-
-# 'warm-up' cameras
-for i in range(30):
-    rgb_frame = get_rgb()
-    full_ir = therm.get_frame()
-    full_depth, depth_frame = get_depth()
-
 f = 0   # frame counter
 tic = time.time()
 rec = False
-ready = True
-new = True
+ready = False
+new = False
 rec_time = []
 
 print ("Press 'esc' to terminate")
@@ -194,7 +193,7 @@ human_detection = False
 interaction_detection = False
 
 # 0 = no homography, 1 = RGB/d perspective,2 = IR perspective
-homography_setting = 0 #defaults to 2 if running inference
+homography_setting = 0 #defaults to 2 if running inference`
 
 while not done:
     if (human_detection):
@@ -260,7 +259,7 @@ while not done:
 
     if server_response == "record":
         if f == 0:
-            print "Starting to record"
+            print("recording No.", recording)
         rec = True
         ready = True
         new = False
@@ -268,7 +267,7 @@ while not done:
     # FSM to see what needs to be done
     elif server_response == "stop":
         if f != 0:
-            print "Stopped recording"
+            print("recording stopped and videos saved")
         rec = False
         ready = False
         new = False
@@ -277,72 +276,22 @@ while not done:
         rgb_vid.release()
         ir_vid.release()
         depth_vid.release()
-        timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
-        for value in rec_time:
-            timefile.write(str(value) + "/n")
-        timefile.close()
+        df.to_csv(video_location + "timefile", sep='\t')
 
-    elif server_response == "restart":
-        if not new:
-            # release the videos to be rerecorded
-            print "Restarting recording"
-            rgb_vid.release()
-            ir_vid.release()
-            depth_vid.release()
-            rec_time = []
-            rec = False
-            ready = True
-            new = True
-            # set-up videos to be recorded
-            f = 0
-            rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid_' + str(vid_num) + '.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-            ir_vid = cv2.VideoWriter(video_location + 'ir_vid_' + str(vid_num) + '.avi', fourcc, fps, (ir_w, ir_h), 1)
-            depth_vid = cv2.VideoWriter(video_location + 'depth_vid_' + str(vid_num) + '.avi', fourcc, fps, (depth_w, depth_h), 1)
-
-            if os.path.exists(video_location + 'ir_full_vid_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-            os.makedirs(video_location + 'ir_full_vid_' + str(vid_num) + '/')
-            if os.path.exists(video_location + 'depth_full_vid_' + str(vid_num) + '/'):
-                shutil.rmtree(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-            os.makedirs(video_location + 'depth_full_vid_' + str(vid_num) + '/')
-            ir_name = video_location + 'ir_full_vid_' + str(vid_num) + '/ir_frame_'
-            depth_name = video_location + 'depth_full_vid_' + str(vid_num) + '/depth_frame_'
-
-    elif server_response == "new":
-        if not new:
-            # release the previous videos recorded
-            print "Starting new recording"
-            rgb_vid.release()
-            ir_vid.release()
-            depth_vid.release()
-            timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
-            for value in rec_time:
-                timefile.write(str(value) + "/n")
-            timefile.close()
-            rec = False
-            ready = True
-            new = True
-            # set-up new videos
-            vid_num += 1
-            f = 0
-            video_location = base_video_location
-            if os.path.exists(video_location + 'server_recording_' + str(vid_num) + '/'):
-                vid_num = vid_num + 1
-            oldmask = os.umask(000)
-            os.makedirs(video_location + 'server_recording_' + str(vid_num) + '/', 0777)
-            os.umask(oldmask)
-
-            video_location = video_location + 'server_recording_' + str(vid_num) + '/'
-            rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-            ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
-            depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
-
-            os.makedirs(video_location + 'ir_full_vid/')
-            os.makedirs(video_location + 'depth_full_vid/')
-            os.makedirs(video_location + 'rgb_full_vid/')
-            ir_name = video_location + 'ir_full_vid/ir_frame_'
-            depth_name = video_location + 'depth_full_vid/depth_frame_'
-            rgb_name = video_location + 'rgb_full_vid/rgb_frame_'
+    elif (server_response == "new" and not new):
+        print "Starting new recording"
+        #timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
+        #for value in rec_time:
+        #    timefile.write(str(value) + "/n")
+        #timefile.close()
+        # set-up new videos
+        f = 0
+        makedir()
+        df.to_csv(video_location + "timefile", sep='\t')
+        rec = False
+        ready = True
+        new = True
+        action = "record"
 
     elif server_response == "close":
         done = True
@@ -356,24 +305,34 @@ while not done:
         depth_vid.write(depth_frame)
         np.save(ir_name + str(f), full_ir)
         np.save(depth_name + str(f), full_depth)
-        rec_time.append(server_time)
+        df.loc[f] = [f, strftime("%Y-%m-%d %H:%M:%S",gmtime()), server_time]
         print ("frame No. recorded ", f)
 
     if k == 27:  # esc key
         done = True
+    if k == 49:  # 1 key
+        human_detection = False
+        interaction_detection = False
+        homography_setting = 1
+    if k == 50:  # 2 key
+        human_detection = False
+        interaction_detection = False
+        homography_setting = 2
+    if k == 48:  # 0 key
+        human_detection = False
+        interaction_detection = False
+        homography_setting = 0
+    if k == 104: #h key
+        homography_setting = 2
+        human_detection = True
+    if k == 105: #i key
+        homography_setting = 2
+        interaction_detection = True
 
 # release resources and destoy windows
 rgb_stream.stop()
 depth_stream.stop()
 openni2.unload()
-rgb_vid.release()
-ir_vid.release()
-depth_vid.release()
-timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
-for value in rec_time:
-    timefile.write(str(value) + "/n")
-timefile.close()
 clientConnectThread.update_command("close")
 cv2.destroyWindow("live")
-time.sleep(2)
 print ("Completed video generation using {} codec". format(fourcc))

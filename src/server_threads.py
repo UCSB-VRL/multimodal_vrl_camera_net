@@ -124,8 +124,6 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     ready[int(self.devid) - 1] = False
                     if action == "new":
                         self.msg = "new_{}".format(self.tic)
-                    elif action == "restart":
-                        self.msg = "restart_{}".format(self.tic)
                     elif close == True:
                         self.msg = "close_{}".format(self.tic)
                     else:
@@ -141,8 +139,6 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                             self.msg = "wait_{}".format(self.tic)
                     elif action == "new":
                         self.msg = "new_{}".format(self.tic)
-                    elif action == "restart":
-                        self.msg = "restart_{}".format(self.tic)
                     elif action == "stop":
                         self.msg = "stop_{}".format(self.tic)
                     elif close == True:
@@ -156,9 +152,6 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     elif self.cmd[1].lower() == "stop":
                         action = "stop"
                         self.msg = "stop_{}".format(self.tic)
-                    elif self.cmd[1].lower() == "restart":
-                        action = "restart"
-                        self.msg = "restart_{}".format(self.tic)
                     elif self.cmd[1].lower() == "new":
                         action = "new"
                         self.msg = "new_{}".format(self.tic)

@@ -233,7 +233,7 @@ while not done:
     if k == 105: #i key
         homography_setting = 2
         interaction_detection = True
-    if (k == 114 and ~rec): # r key
+    if (k == 114 and not rec): # r key
         makedir()
         f = 0
         print("recording No.", recording)
