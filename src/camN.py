@@ -163,6 +163,8 @@ new = False
 rec_time = []
 
 print ("Press 'esc' to terminate")
+print ("'0' for no homography, '1' for rgb/d perspective, '2' for thermal perspective")
+print ("'h' for human detector, 'i' for interaction detector")
 done = False
 
 # ==============================================================================
@@ -238,7 +240,7 @@ while not done:
 
    # FSM to see what needs to be done
     if server_response == "record":
-        clientConnectThread.update_command("info_")
+        #clientConnectThread.update_command("info_")
         if f == 0:
             print("recording No.", recording)
         rec = True
@@ -277,7 +279,7 @@ while not done:
         ready = False
 
     if rec:
-        rec = False
+        #rec = False
         f += 1
         rgb_vid.write(rgb_frame)
         ir_vid.write(ir_frame)

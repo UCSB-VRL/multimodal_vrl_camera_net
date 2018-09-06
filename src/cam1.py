@@ -165,7 +165,9 @@ action = ""
 rec_time = []
 
 
-print ("Press 'esc' to terminate")
+print ("Press 'esc' to terminate, 'r' to record, 's' to stop recording")
+print ("'0' for no homography, '1' for rgb/d perspective, '2' for thermal perspective")
+print ("'h' for human detector, 'i' for interaction detector")
 done = False
 
 # ==============================================================================
@@ -241,13 +243,13 @@ while not done:
 
     # kind of works like a FSM
     if server_response == "record":
-        clientConnectThread.update_command("info_" + action) #make other cam wait while this processes
+        #clientConnectThread.update_command("info_" + action) #make other cam wait while this processes
         if f == 0:
             print("recording No.", recording)
         rec = True
         new = False
 
-    elif server_response == "stop": #
+    elif server_response == "stop":
         if f != 0:
             print("recording stopped and videos saved")
         rec = False
@@ -285,7 +287,7 @@ while not done:
         ready = False
 
     if rec:
-        rec = False
+        #rec = False
         f += 1
         rgb_vid.write(rgb_frame)
         ir_vid.write(ir_frame)

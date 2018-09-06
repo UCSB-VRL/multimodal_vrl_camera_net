@@ -35,7 +35,7 @@ ready = [] # flag to ensure that all nodes are working together
 
 
 # Add/Remove devices to/from dev_list
-dev_list = ['dev1', 'dev2']  # Allowed devices , 'dev3', 'dev4'
+dev_list = ['dev1', 'dev2', 'dev3']  # Allowed devices , 'dev3', 'dev4'
 
 terminate_list = dev_list[:]
 terminate = False  # termiantion flag
@@ -43,7 +43,7 @@ terminate = False  # termiantion flag
 
 dev_dict = {'dev1': {'PORT': 50007},
             'dev2': {'PORT': 50008},
-            #'dev3': {'PORT': 50009},
+            'dev3': {'PORT': 50009},
             }
 
 roll = {}
