@@ -57,11 +57,11 @@ def get_depth():
     Returns numpy ndarrays representing the raw and ranged depth images.
     Outputs:
         dmap:= distancemap in mm, 1L ndarray, dtype=uint16, min=0, max=2**12-1
-        d4d := depth for dislay, 3L ndarray, dtype=uint8, min=0, max=255    
-    Note1: 
+        d4d := depth for dislay, 3L ndarray, dtype=uint8, min=0, max=255
+    Note1:
         fromstring is faster than asarray or frombuffer
-    Note2:     
-        .reshape(120,160) #smaller image for faster response 
+    Note2:
+        .reshape(120,160) #smaller image for faster response
                 OMAP/ARM default video configuration
         .reshape(240,320) # Used to MATCH RGB Image (OMAP/ARM)
                 Requires .set_video_mode
@@ -177,7 +177,6 @@ cv2.setMouseCallback('ir', get_ir_pts)
 print ("Press 'esc' to terminate")
 f = 0   # frame counter
 num = 0
-times = 0
 done = False
 while not done:
     k = cv2.waitKey(1) & 255
@@ -196,9 +195,7 @@ while not done:
     ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame
     depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
 
-    times += 1
-    if times == 30:  # 30 frames between captures
-        times = 0
+    if k == 32:  # press esc to use frame for homography
         rgb_img = rgb_frame.copy()
         ir_img = ir_frame.copy()
         rgb_flag = False
@@ -297,7 +294,6 @@ while not done:
     disp = np.hstack((depth_place, ir_place, rgb_frame))
     cv2.imshow("live", disp)
 
-    print ("frame No.", f)
     if k == 27:  # esc key
         done = True
 
@@ -309,4 +305,3 @@ cv2.destroyWindow("vid")
 cv2.destroyWindow("ir")
 cv2.destroyWindow("rgb")
 cv2.destroyWindow("live")
-print ("Completed video generation using {} codec". format(fourcc))
