@@ -13,6 +13,7 @@ import sys
 import shutil
 import pandas as pd
 import client
+from time import gmtime, strftime
 from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
 from seek_camera import thermal_camera
@@ -88,31 +89,9 @@ def get_depth():
 # ==============================================================================
 #############################################################################
 
-
-def talk2server(cmd='connect', devN=1):
-    """
-    Communicate with server 'if active'
-    inputs:
-        cmd = str 'connect' ,'check' , 'sync' or 'close'
-        devN = int 1, 2, ... n, (must be declared in server_threads.py)
-    outputs:
-        server_reponse = str, server response
-        server_time = str, server timestamp
-    usage:
-    server_response, server_time = talk2server(cmd='connect',devN=1)
-    """
-    try:
-        server_response, server_time = client.check_tcp_server(cmd=cmd, dev=devN).split("_")
-        server_response, server_time = clientConnectThread.get_command()
-    except:  # noserver response
-        server_time = "na"
-        server_response = "none"
-    # print "server reponse: {} and timestamp: {}".format(server_response, server_time)
-    return server_response, server_time
-
 # TCP communication
 # Start the client thread:
-clientConnectThread = client.ClientConnect("connect", "{}".format(devN))
+clientConnectThread = client.ClientConnect("connect_", "{}".format(devN))
 clientConnectThread.setDaemon(True)
 clientConnectThread.start()  # launching thread
 # time.sleep(1)
@@ -248,23 +227,23 @@ while not done:
 
     # Poll the server:
     if ready:
-        clientConnectThread.update_command("ready")
+        clientConnectThread.update_command("ready_")
     else:
-        clientConnectThread.update_command("info")
+        clientConnectThread.update_command("info_")
     response = clientConnectThread.get_command()
     if "_" in response:
         server_response, server_time = response.split("_")
     else:
         server_response = response
 
+   # FSM to see what needs to be done
     if server_response == "record":
+        clientConnectThread.update_command("info_")
         if f == 0:
             print("recording No.", recording)
         rec = True
-        ready = True
         new = False
 
-    # FSM to see what needs to be done
     elif server_response == "stop":
         if f != 0:
             print("recording stopped and videos saved")
@@ -291,7 +270,6 @@ while not done:
         rec = False
         ready = True
         new = True
-        action = "record"
 
     elif server_response == "close":
         done = True
@@ -299,6 +277,7 @@ while not done:
         ready = False
 
     if rec:
+        rec = False
         f += 1
         rgb_vid.write(rgb_frame)
         ir_vid.write(ir_frame)
@@ -333,6 +312,6 @@ while not done:
 rgb_stream.stop()
 depth_stream.stop()
 openni2.unload()
-clientConnectThread.update_command("close")
+clientConnectThread.update_command("close_")
 cv2.destroyWindow("live")
 print ("Completed video generation using {} codec". format(fourcc))

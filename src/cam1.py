@@ -90,28 +90,6 @@ def get_depth():
 # ==============================================================================
 #############################################################################
 
-
-def talk2server(cmd='connect', devN=1):
-    """
-    Communicate with server 'if active'
-    inputs:
-        cmd = str 'connect' ,'check' , 'sync' or 'close'
-        devN = int 1, 2, ... n, (must be declared in server_threads.py)
-    outputs:
-        server_reponse = str, server response
-        server_time = str, server timestamp
-    usage:
-    server_response, server_time = talk2server(cmd='connect',devN=1)
-    """
-    try:
-        server_response, server_time = client.check_tcp_server(cmd=cmd, dev=devN).split("_")
-        server_response, server_time = clientConnectThread.get_command()
-    except:  # noserver response
-        server_time = "na"
-        server_response = "none"
-    # print "server reponse: {} and timestamp: {}".format(server_response, server_time)
-    return server_response, server_time
-
 # TCP communication
 # Start the client thread:
 clientConnectThread = client.ClientConnect("connect_", "{}".format(devN))
@@ -263,13 +241,13 @@ while not done:
 
     # kind of works like a FSM
     if server_response == "record":
+        clientConnectThread.update_command("info_" + action) #make other cam wait while this processes
         if f == 0:
             print("recording No.", recording)
         rec = True
-        ready = True
         new = False
 
-    elif server_response == "stop":
+    elif server_response == "stop": #
         if f != 0:
             print("recording stopped and videos saved")
         rec = False
@@ -286,7 +264,7 @@ while not done:
         #    timefile.write(str(value) + "/n")
         #timefile.close()
 
-    elif (server_response == "new" and not new):
+    elif (server_response == "new" and not new): #Create new recording then tell server to record
         print "Starting new recording"
         #timefile = open(video_location + 'frame_times_' + str(vid_num) + '.txt', 'w')
         #for value in rec_time:
@@ -307,6 +285,7 @@ while not done:
         ready = False
 
     if rec:
+        rec = False
         f += 1
         rgb_vid.write(rgb_frame)
         ir_vid.write(ir_frame)
