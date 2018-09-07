@@ -32,10 +32,11 @@ save = False  # flag to save
 close = False # flag to know if everything is closed
 action = "" # flag to discribe what action needs to be preformed
 ready = [] # flag to ensure that all nodes are working together
+curframe = [] # flag to see what frame number each dev is on
 
 
 # Add/Remove devices to/from dev_list
-dev_list = ['dev1', 'dev2', 'dev3']  # Allowed devices , 'dev3', 'dev4'
+dev_list = ['dev1', 'dev2']  # Allowed devices , 'dev3', 'dev4'
 
 terminate_list = dev_list[:]
 terminate = False  # termiantion flag
@@ -43,13 +44,14 @@ terminate = False  # termiantion flag
 
 dev_dict = {'dev1': {'PORT': 50007},
             'dev2': {'PORT': 50008},
-            'dev3': {'PORT': 50009},
+            #'dev3': {'PORT': 50009},
             }
 
 roll = {}
 for d in dev_list:
     roll[d] = 'n'
     ready.append(False)
+    curframe.append(0)
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
     """
@@ -131,8 +133,9 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                 # --- Tell the node what to do, directions when ready
                 elif self.cmd[0].lower() == "ready":
                     ready[int(self.devid) - 1] = True
+                    curframe[int(self.devid) - 1] = int(self.cmd[2].lower()) #get frame number from incoming command
                     if action == "record":
-                        if all(device == True for device in ready):
+                        if (all(device == True for device in ready) and (curframe[int(self.devid) - 1] == min(curframe))): #check to see if devices are ready and make sure its not going ahead in frames for syncronization
                             self.msg = "record_{}".format(self.tic)
                         else:
                             self.msg = "wait_{}".format(self.tic)

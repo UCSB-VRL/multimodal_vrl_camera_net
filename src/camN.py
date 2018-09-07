@@ -101,7 +101,7 @@ response = clientConnectThread.get_command()
 if "_" in response:
     server_response, server_time = response.split("_")
 else:
-    server_reponse = response
+    server_response = response
 # Create a pandas dataframe to hold the information (index starts at 1)
 cols = ["frameN", "localtime", "servertime"]
 df = pd.DataFrame(columns=cols)
@@ -229,7 +229,7 @@ while not done:
 
     # Poll the server:
     if ready:
-        clientConnectThread.update_command("ready_")
+        clientConnectThread.update_command("ready_slave_" + str(f))
     else:
         clientConnectThread.update_command("info_")
     response = clientConnectThread.get_command()
@@ -278,8 +278,11 @@ while not done:
         rec = False
         ready = False
 
+    elif server_response == "wait":
+        rec = False
+
     if rec:
-        #rec = False
+        rec = False
         f += 1
         rgb_vid.write(rgb_frame)
         ir_vid.write(ir_frame)
