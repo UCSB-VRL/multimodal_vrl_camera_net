@@ -240,7 +240,7 @@ while not done:
 
    # FSM to see what needs to be done
     if server_response == "record":
-        #clientConnectThread.update_command("info_")
+        clientConnectThread.update_command("ready_process") #make other cam wait while this processes
         if f == 0:
             print("recording No.", recording)
         rec = True

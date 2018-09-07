@@ -243,7 +243,7 @@ while not done:
 
     # kind of works like a FSM
     if server_response == "record":
-        #clientConnectThread.update_command("info_" + action) #make other cam wait while this processes
+        clientConnectThread.update_command("ready_process") #make other cam wait while this processes
         if f == 0:
             print("recording No.", recording)
         rec = True
@@ -324,9 +324,9 @@ while not done:
     if k == 105: #i key
         homography_setting = 2
         interaction_detection = True
-    if (k == 114 and not rec): # r key
+    if (k == 114 and action != "record"): # r key
         action = "new"
-    if (k == 115 and rec): # s key
+    if (k == 115 and action == "record"): # s key
         action = "stop"
 
 # release resources and destoy windows
