@@ -32,10 +32,11 @@ save = False  # flag to save
 close = False # flag to know if everything is closed
 action = "" # flag to discribe what action needs to be preformed
 ready = [] # flag to ensure that all nodes are working together
+curframe = [] # flag to see what frame number each dev is on
 
 
 # Add/Remove devices to/from dev_list
-dev_list = ['dev1', 'dev2']  # Allowed devices , 'dev3', 'dev4'
+dev_list = ['dev1', 'dev2', 'dev3']  # Allowed devices , 'dev3', 'dev4'
 
 terminate_list = dev_list[:]
 terminate = False  # termiantion flag
@@ -43,14 +44,14 @@ terminate = False  # termiantion flag
 
 dev_dict = {'dev1': {'PORT': 50007},
             'dev2': {'PORT': 50008},
-            #            'dev3': {'PORT': 50009},
+            'dev3': {'PORT': 50009},
             }
 
 roll = {}
 for d in dev_list:
     roll[d] = 'n'
     ready.append(False)
-
+    curframe.append(0)
 
 class MyTCPHandler(SocketServer.BaseRequestHandler):
     """
@@ -73,14 +74,14 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
         self.cmd = self.data[1].split("_")
         self.msg = ""
         self.tic = time.time()  # server time tic
-        self.time = strftime("%a, %d %b %Y %H:%M:%S +0000", localtime())
+        self.time = strftime("%Y-%m-%d %H:%M:%S", localtime())
 
         dev = "dev{}".format(self.devid)
 
 #        print " ====== SERVER -- RUNNING ====== "
-        print "{} wrote:".format(self.client_address[0])
-        print "\t", self.data
-        print "\t at local time {}".format(self.tic)
+        # print "{} wrote:".format(self.client_address[0])
+        # print "\t", self.data
+        # print "\t at local time {}".format(self.tic)
 
         # Check device is on the list of allowed devices:
         if dev in dev_list:
@@ -124,8 +125,6 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                     ready[int(self.devid) - 1] = False
                     if action == "new":
                         self.msg = "new_{}".format(self.tic)
-                    elif action == "restart":
-                        self.msg = "restart_{}".format(self.tic)
                     elif close == True:
                         self.msg = "close_{}".format(self.tic)
                     else:
@@ -134,37 +133,35 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
                 # --- Tell the node what to do, directions when ready
                 elif self.cmd[0].lower() == "ready":
                     ready[int(self.devid) - 1] = True
-                    if action == "record":
-                        if all(device == True for device in ready):
+                    curframe[int(self.devid) - 1] = int(self.cmd[2].lower()) #get frame number from incoming command
+                    if (self.cmd[0].lower() == "process"): #dont record more
+                        self.msg = "wait_{}".format(self.tic)
+                    elif action == "record":
+                        if (all(device == True for device in ready) and (curframe[int(self.devid) - 1] == min(curframe))): #check to see if devices are ready and make sure its not going ahead in frames for syncronization
                             self.msg = "record_{}".format(self.tic)
                         else:
                             self.msg = "wait_{}".format(self.tic)
                     elif action == "new":
                         self.msg = "new_{}".format(self.tic)
-                    elif action == "restart":
-                        self.msg = "restart_{}".format(self.tic)
                     elif action == "stop":
                         self.msg = "stop_{}".format(self.tic)
                     elif close == True:
                         self.msg = "close_{}".format(self.tic)
+
+                else:  # unknown command
+                    print "Unknown command {}. Use connect, info, ready, or close".format(self.cmd)
                 
                 # --- Manage commands from controling device, controls
                 if (int(self.devid) == 1):
                     if self.cmd[1].lower() == "record":
                         action = "record"
-                        self.msg = "record_{}".format(self.tic)
                     elif self.cmd[1].lower() == "stop":
                         action = "stop"
-                        self.msg = "stop_{}".format(self.tic)
-                    elif self.cmd[1].lower() == "restart":
-                        action = "restart"
-                        self.msg = "restart_{}".format(self.tic)
                     elif self.cmd[1].lower() == "new":
                         action = "new"
-                        self.msg = "new_{}".format(self.tic)
-
-                else:  # unknown command
-                    print "Unknown command {}. Use connect, check, or close".format(self.cmd)
+                    elif self.cmd[1].lower() == "":
+                        action = ""
+                
 
             else:  # terminate
                 if dev in devs:
@@ -192,14 +189,14 @@ class MyTCPHandler(SocketServer.BaseRequestHandler):
 
         # print 'msg: ', self.msg
         self.request.sendall(self.msg.lower() + '=' +
-                             strftime("%a, %d %b %Y %H:%M:%S +0000", localtime()))
+                             strftime("%Y-%m-%d %H:%M:%S", localtime()))
         # print'Devices ready: ', devs
 # MyTCPHandler()
 
 
 class ServerThread(threading.Thread):
     #HOST = "localhost"
-    HOST = "192.168.0.12"  # Local net
+    HOST = "192.168.1.11"  # Local net
 
     def __init__(self, serverid='dev1', HOST=HOST, PORT=50007):
         print 'serving %s' % serverid
@@ -218,7 +215,7 @@ if __name__ == "__main__":
     print " ====== SERVER -- RUNNING ====== "
 
     #HOST = "localhost"
-    HOST = "192.168.0.12"  # Local net
+    HOST = "192.168.1.11"  # Local net
 
 #    dev_list1 = ['dev1']
     server_thread_list = []

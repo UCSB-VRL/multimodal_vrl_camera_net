@@ -4,10 +4,12 @@ Created on Mon Jul  3 09:54:53 2017
 @author: Julian
 
 Use to record with the primesense camera RGB and depth cameras and the seek thermal camera
+You need to heat circles in order for thermal camera to see circles
 """
 import numpy as np
 import cv2
 import os
+import time
 import shutil
 from primesense import openni2  # , nite2
 from primesense import _openni2 as c_api
@@ -15,7 +17,7 @@ from seek_camera import thermal_camera
 
 #############################################################################
 # set-up primesense camera
-dist = '/home/julian/Install/OpenNI2-x64/Redist'
+dist = '/home/carlos/Install/kinect/OpenNI-Linux-Arm-2.2/Redist'
 # Initialize openni and check
 openni2.initialize(dist)
 if (openni2.is_initialized()):
@@ -55,11 +57,11 @@ def get_depth():
     Returns numpy ndarrays representing the raw and ranged depth images.
     Outputs:
         dmap:= distancemap in mm, 1L ndarray, dtype=uint16, min=0, max=2**12-1
-        d4d := depth for dislay, 3L ndarray, dtype=uint8, min=0, max=255    
-    Note1: 
+        d4d := depth for dislay, 3L ndarray, dtype=uint8, min=0, max=255
+    Note1:
         fromstring is faster than asarray or frombuffer
-    Note2:     
-        .reshape(120,160) #smaller image for faster response 
+    Note2:
+        .reshape(120,160) #smaller image for faster response
                 OMAP/ARM default video configuration
         .reshape(240,320) # Used to MATCH RGB Image (OMAP/ARM)
                 Requires .set_video_mode
@@ -67,7 +69,7 @@ def get_depth():
     dmap = np.fromstring(depth_stream.read_frame().get_buffer_as_uint16(),
                          dtype=np.uint16).reshape(240, 320)  # Works & It's FAST
     # Correct the range. Depth images are 12bits
-    d4d = np.uint8(dmap.astype(float) * 255 / 2**12 - 1)
+    d4d = np.uint8(dmap.astype(float) * 255 / np.amax(dmap) - 1)
     d4d = 255 - cv2.cvtColor(d4d, cv2.COLOR_GRAY2RGB)
     return dmap, d4d
 
@@ -89,33 +91,11 @@ ir_place = np.zeros((rgb_h, ir_w, channels), dtype='uint8')
 depth_place = np.zeros((depth_h, depth_w, channels), dtype='uint8')
 place_ir = rgb_h / 2 - ir_h / 2
 place_depth = rgb_h / 2 - depth_h / 2
-fps = 8.0
-
-# ==============================================================================
-# THE CODECS
-# ==============================================================================
-fourcc = cv2.cv.CV_FOURCC('M', 'P', 'E', 'G')
-video_location = '/home/julian/Videos/'
-rgb_vid = cv2.VideoWriter(video_location + 'rgb_vid.avi', fourcc, fps, (rgb_w, rgb_h), 1)
-ir_vid = cv2.VideoWriter(video_location + 'ir_vid.avi', fourcc, fps, (ir_w, ir_h), 1)
-depth_vid = cv2.VideoWriter(video_location + 'depth_vid.avi', fourcc, fps, (depth_w, depth_h), 1)
-
-if os.path.exists(video_location + 'ir_full_vid/'):
-    shutil.rmtree(video_location + 'ir_full_vid/')
-os.makedirs(video_location + 'depth_full_vid/')
-if os.path.exists(video_location + 'depth_full_vid/'):
-    shutil.rmtree(video_location + 'depth_full_vid/')
-os.makedirs(video_location + 'depth_full_vid/')
-ir_name = video_location + 'ir_full_vid/ir_frame_'
-depth_name = video_location + 'depth_full_vid/depth_frame_'
-
-###############################################################################
-
 
 def nothing(x):
     pass
 
-
+# Variables for drawing rectangle around circle grid
 drawing = False
 ix = 0
 iy = 0
@@ -124,7 +104,7 @@ ir_pts = rgb_pts.copy()
 
 
 def get_rgb_pts(event, x, y, flags, param):
-    global drawing, ix, iy, rgb_pts
+    global drawing, ix, iy, rgb_pts, rgb_img, rgb_find
     if event == cv2.EVENT_LBUTTONDOWN:
         rgb_pts[0, 0] = x
         rgb_pts[0, 1] = y
@@ -133,14 +113,16 @@ def get_rgb_pts(event, x, y, flags, param):
     elif event == cv2.EVENT_LBUTTONUP:
         rgb_pts[1, 0] = x
         rgb_pts[1, 1] = y
+        cv2.rectangle(rgb_find, (ix, iy), (x, y), (0, 255, 0), 1)
         drawing = False
     elif event == cv2.EVENT_MOUSEMOVE:
         if drawing == True:
+            rgb_find = rgb_img.copy()
             cv2.rectangle(rgb_find, (ix, iy), (x, y), (0, 255, 0), 1)
 
 
 def get_ir_pts(event, x, y, flags, param):
-    global drawing, ix, iy, ir_pts
+    global drawing, ix, iy, ir_pts, ir_img, ir_find
     if event == cv2.EVENT_LBUTTONDOWN:
         ir_pts[0, 0] = x
         ir_pts[0, 1] = y
@@ -149,19 +131,21 @@ def get_ir_pts(event, x, y, flags, param):
     elif event == cv2.EVENT_LBUTTONUP:
         ir_pts[1, 0] = x
         ir_pts[1, 1] = y
+        cv2.rectangle(ir_find, (ix, iy), (x, y), (0, 255, 0), 1)
         drawing = False
     elif event == cv2.EVENT_MOUSEMOVE:
         if drawing == True:
+            ir_find = ir_img.copy()
             cv2.rectangle(ir_find, (ix, iy), (x, y), (0, 255, 0), 1)
 
 
 # pattern dimensions for the grid detection and drawing
-r = 4
-c = 4
+r = 4 #rows
+c = 3 #columns
 pattern_size = (r, c)  # circles grid
 
 
-def detectGrid(img):
+def detectGrid(img): #detects circle grid and displays checkerboard around circles when detected
     found, corners = cv2.findCirclesGrid(
         img, pattern_size, None, cv2.CALIB_CB_SYMMETRIC_GRID + cv2.CALIB_CB_CLUSTERING)
     detected = False
@@ -193,7 +177,6 @@ cv2.setMouseCallback('ir', get_ir_pts)
 print ("Press 'esc' to terminate")
 f = 0   # frame counter
 num = 0
-times = 0
 done = False
 while not done:
     k = cv2.waitKey(1) & 255
@@ -212,9 +195,7 @@ while not done:
     ir_place[place_ir:place_ir + ir_h, :, :] = ir_frame
     depth_place[place_depth:place_depth + depth_h, :, :] = depth_frame
 
-    times += 1
-    if times == 80:  # space
-        times = 0
+    if k == 32:  # press esc to use frame for homography
         rgb_img = rgb_frame.copy()
         ir_img = ir_frame.copy()
         rgb_flag = False
@@ -227,20 +208,21 @@ while not done:
             cv2.imshow('rgb', rgb_find)
             if g == 27:
                 leave = True
-            elif g == 115:
+            elif g == 115: # s key to save rgb rect
                 rgb_flag = True
         while ((not ir_flag) & (not leave)):
             g = cv2.waitKey(1) & 255
             cv2.imshow('ir', ir_find)
             if g == 27:
                 leave = True
-            elif g == 115:
+            elif g == 115: # s key to save ir rect
                 ir_flag = True
         rgb_pts += rgb_pts
 
         while not leave:
             g = cv2.waitKey(1) & 255
 
+            # Apply Gaussian blur to both frames
             rgb_temp = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2GRAY)
             rgb_temp = cv2.resize(rgb_temp, (640, 480), interpolation=cv2.INTER_AREA)
             rgb_temp = cv2.GaussianBlur(rgb_temp, (rgb_blur, rgb_blur), 0)
@@ -249,7 +231,6 @@ while not done:
 
             ir_temp = cv2.GaussianBlur(ir_img, (ir_blur, ir_blur), 0)
             ret, ir_temp = cv2.threshold(ir_temp, ir_thresh, 255, cv2.THRESH_BINARY_INV)
-
             # detect pattern
             rgb_viz, rgb_corners, rgb_detected = detectGrid(
                 rgb_temp[rgb_pts[0, 1]:rgb_pts[1, 1], rgb_pts[0, 0]:rgb_pts[1, 0], :])
@@ -259,18 +240,17 @@ while not done:
             ir_temp[ir_pts[0, 1]:ir_pts[1, 1], ir_pts[0, 0]:ir_pts[1, 0], :] = ir_viz
 
             rgb_place = cv2.resize(rgb_temp, (320, 240))
-
             ir_place[place_ir:place_ir + 206, :, :] = ir_temp
+
             disp = np.hstack((ir_place, rgb_place))
             disp = np.uint8(disp)
             cv2.imshow('vid', disp)
             if rgb_detected:
-                for i in range(16):
+                for i in range(12):
                     pos1 = int(rgb_corners[i, 0, 0] / 2 + rgb_pts[0, 0] / 2)
                     pos2 = int(rgb_corners[i, 0, 1] / 2 + rgb_pts[0, 1] / 2)
                     cv2.circle(depth_frame, (pos1, pos2), 3, (0, 0, 255), -1)
-            cv2.imshow('depth', depth_frame)
-
+            # Set up track bars to adjust images
             rgb_thresh = cv2.getTrackbarPos('RGB Threshold', 'vid')
             rgb_blur = cv2.getTrackbarPos('RGB Blur', 'vid')
             ir_thresh = cv2.getTrackbarPos('IR Threshold', 'vid')
@@ -296,31 +276,24 @@ while not done:
                                              ir_corners.reshape(-1, 2), cv2.RANSAC, 44)
                 Hinv, mask2 = cv2.findHomography(
                     ir_corners.reshape(-1, 2), rgb_corners.reshape(-1, 2), cv2.RANSAC, 44)
-                H = np.hstack((H, [[0], [0], [0]]))
-                Hinv = np.hstack((Hinv, [[0], [0], [0]]))
-                distance = np.zeros((16, 1), dtype='uint16')
-                for i in range(16):
+
+                distance = np.zeros((12, 1), dtype='uint16')
+                for i in range(12):
                     pos1 = int(rgb_corners[i, 0, 1])
                     pos2 = int(rgb_corners[i, 0, 0])
                     distance[i] = np.average(full_depth[pos1 - 3:pos1 + 3, pos2 - 3:pos2 + 3])
-                distance = np.reshape(distance, (4, 4))
+                distance = np.reshape(distance, (4, 3))
                 H = np.vstack((H, distance))
                 Hinv = np.vstack((Hinv, distance))
                 num += 1
-                np.savetxt("/home/julian/Documents/Hmatrix_rgb_to_ir_" + str(num) + ".out", H)
-                np.savetxt("/home/julian/Documents/Hinvmatrix_ir_to_rgb_" + str(num) + ".out", Hinv)
+                np.savetxt("/home/carlos/Documents/multimodal_vrl_camera_net/src/Homographies/Hmatrix_rgb_to_ir_" + str(num) + ".out", H)
+                np.savetxt("/home/carlos/Documents/multimodal_vrl_camera_net/src/Homographies/Hinvmatrix_ir_to_rgb_" + str(num) + ".out", Hinv)
                 leave = True
 
     # display and write video
     disp = np.hstack((depth_place, ir_place, rgb_frame))
     cv2.imshow("live", disp)
-    rgb_vid.write(rgb_frame)
-    ir_vid.write(ir_frame)
-    depth_vid.write(depth_frame)
-    np.save(ir_name + str(f), full_ir)
-    np.save(depth_name + str(f), full_depth)
 
-    print ("frame No.", f)
     if k == 27:  # esc key
         done = True
 
@@ -328,11 +301,7 @@ while not done:
 rgb_stream.stop()
 depth_stream.stop()
 openni2.unload()
-rgb_vid.release()
-ir_vid.release()
-depth_vid.release()
 cv2.destroyWindow("vid")
 cv2.destroyWindow("ir")
 cv2.destroyWindow("rgb")
 cv2.destroyWindow("live")
-print ("Completed video generation using {} codec". format(fourcc))

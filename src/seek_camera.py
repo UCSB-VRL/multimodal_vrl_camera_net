@@ -140,7 +140,7 @@ class thermal_camera():
                 return self.full_frame
 
     def get_8bit_frame(self, frame):
-        output = frame >> 2
-        output[output >= 4096] = 4096 - 1
-        output = cv2.cvtColor(output.astype('uint8'), cv2.COLOR_GRAY2BGR)
-        return output
+        frame = frame - np.amin(frame)
+        ir_frame = np.uint8(frame.astype(float) * 255 / np.amax(frame) - 1)
+        ir_frame = cv2.cvtColor(ir_frame.astype('uint8'), cv2.COLOR_GRAY2BGR)
+        return ir_frame
