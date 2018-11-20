@@ -41,9 +41,10 @@ while (1):
         cv2.imshow('frame_homog', disp_irhomog) #with homography
         cv2.waitKey(500)
 
-    except: #print out valid frames
+    except Exception as e: #print out valid frames
         files = os.listdir(curdir+"/rgb_full_vid/")
         for i in range(len(files)):
             files[i] = files[i].split('_')[2].strip(".npy")
         files.sort(key=int)
         print("Invalid frame number. Valid frames are:", files)
+        raise e
